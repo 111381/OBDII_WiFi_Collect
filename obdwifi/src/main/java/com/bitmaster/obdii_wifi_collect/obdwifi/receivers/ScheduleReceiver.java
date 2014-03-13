@@ -11,7 +11,7 @@ import java.util.Calendar;
 /**
  * Created by renet on 3/13/14.
  */
-public class ScheduleReceiver extends BroadcastReceiver {
+public class ScheduleReceiver extends BroadcastReceiver { // TODO: how it works?
 
     // restart service every 30 seconds
     private static final long REPEAT_TIME = 1000 * 30;
