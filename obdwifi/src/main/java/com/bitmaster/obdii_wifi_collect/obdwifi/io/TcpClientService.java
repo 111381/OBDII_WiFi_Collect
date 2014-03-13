@@ -29,11 +29,14 @@ public class TcpClientService extends Service {
     public static final String SERVER_IP_ADDRESS = "192.168.0.10";
     //private static final int TCP_SERVER_PORT = 80;
     //private static final String SERVER_IP_ADDRESS = "192.168.50.2";//proekspert.ee
+    private static InetAddress ip = null;
 
     private final IBinder mBinder = new MyBinder();
     private ArrayList<String> list = new ArrayList<String>();
 
+    private WriteDown file = null;
     private SupportedPids pids = null;
+
     private boolean continueRequests = true;
 
     //This allows you to communicate directly with the service.
@@ -44,8 +47,31 @@ public class TcpClientService extends Service {
     }
     @Override
     public void onCreate() {
+        try {
+            this.ip = InetAddress.getByName(SERVER_IP_ADDRESS);
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        try {
+            file = new WriteDown();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         //A service can terminate itself by calling the stopSelf() method.
         //this.stopSelf();
+    }
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        if(this.file != null) {
+            try {
+                this.file.writeToFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
     // can be called several times
     @Override
@@ -85,17 +111,18 @@ public class TcpClientService extends Service {
         protected void onPostExecute(String result) {
 
             list.add(result);
+            if(file == null)
+                return;
+            file.addRow(result);
             nextRequest();
         }
     }
 
     private String runTcpClient(String outMsg) {
         try {
-            Log.i("TcpClient", "creating socket: " + SERVER_IP_ADDRESS + ":" + TCP_SERVER_PORT);
-            InetAddress ip = InetAddress.getByName(SERVER_IP_ADDRESS);
-            Socket s = new Socket(ip, TCP_SERVER_PORT);
-            BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+            Socket socket = new Socket(this.ip, TCP_SERVER_PORT);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             //send output msg
             out.write(outMsg + "\r");
             out.flush();
@@ -108,11 +135,10 @@ public class TcpClientService extends Service {
             }
             Log.i("TcpClient", "received: " + inMsg);
             //close connection
-            s.close();
+            socket.close();
+
             return inMsg;
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-            return e.getLocalizedMessage();
+
         } catch (IOException e) {
             e.printStackTrace();
             return e.getLocalizedMessage();
