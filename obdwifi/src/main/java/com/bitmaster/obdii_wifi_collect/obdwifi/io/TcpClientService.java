@@ -25,10 +25,10 @@ import com.bitmaster.obdii_wifi_collect.obdwifi.MainActivity;
  */
 public class TcpClientService extends Service {
 
-    //public static final int TCP_SERVER_PORT = 35000;
-    //public static final String SERVER_IP_ADDRESS = "192.168.0.10";
-    private static final int TCP_SERVER_PORT = 80;
-    private static final String SERVER_IP_ADDRESS = "192.168.50.2";//proekspert.ee
+    public static final int TCP_SERVER_PORT = 35000;
+    public static final String SERVER_IP_ADDRESS = "192.168.0.10";
+    //private static final int TCP_SERVER_PORT = 80;
+    //private static final String SERVER_IP_ADDRESS = "192.168.50.2";//proekspert.ee
 
     private final IBinder mBinder = new MyBinder();
     private ArrayList<String> list = new ArrayList<String>();
@@ -41,20 +41,16 @@ public class TcpClientService extends Service {
     }
     @Override
     public void onCreate() {
-
-        //runTcpClient();
+        //A service can terminate itself by calling the stopSelf() method.
         //this.stopSelf();
-        list.add("onCreate");
     }
     // can be called several times
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        list.add("ATZ");
-        list.add("0100");
-        new DownloadWebpageTask().execute();
+        new RequestToSocketTask().execute("ATZ");
 
-        return Service.START_NOT_STICKY;//Service is restarted if it gets terminated.
+        return Service.START_NOT_STICKY;//Service is not restarted if it gets terminated.
     }
 
     public class MyBinder extends Binder {
@@ -70,33 +66,33 @@ public class TcpClientService extends Service {
         return list;
     }
 
-    // Uses AsyncTask to create a task away from the main UI thread. This task takes a
-    // URL string and uses it to create an HttpUrlConnection. Once the connection
-    // has been established, the AsyncTask downloads the contents of the webpage as
-    // an InputStream. Finally, the InputStream is converted into a string, which is
+    // Uses AsyncTask to create a task away from the main UI thread.
+    //Once the socket is created, the AsyncTask sends string to server.
+    // responsed InputStream is converted into a string, which is
     // displayed in the UI by the AsyncTask's onPostExecute method.
-    private class DownloadWebpageTask extends AsyncTask<String, Void, String> {
+    private class RequestToSocketTask extends AsyncTask<String, Void, String> {
         @Override
-        protected String doInBackground(String... urls) {
+        protected String doInBackground(String... msg) {
 
-            return TcpClientService.runTcpClient();
+            return TcpClientService.runTcpClient(msg[0]);
         }
         // onPostExecute displays the results of the AsyncTask.
         @Override
         protected void onPostExecute(String result) {
+
             list.add(result);
         }
     }
 
-    private static String runTcpClient() {
+    private static String runTcpClient(String outMsg) {
         try {
+            Log.i("TcpClient", "creating socket: " + SERVER_IP_ADDRESS + ":" + TCP_SERVER_PORT);
             InetAddress ip = InetAddress.getByName(SERVER_IP_ADDRESS);
             Socket s = new Socket(ip, TCP_SERVER_PORT);
             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
             //send output msg
-            String outMsg = "TCP connecting to " + TCP_SERVER_PORT + System.getProperty("line.separator");
-            out.write(outMsg);
+            out.write(outMsg + "\r");
             out.flush();
             Log.i("TcpClient", "sent: " + outMsg);
             //accept server response
@@ -104,16 +100,13 @@ public class TcpClientService extends Service {
             Log.i("TcpClient", "received: " + inMsg);
             //close connection
             s.close();
-
             return inMsg;
-
-            //A service can terminate itself by calling the stopSelf() method.
-            //this.stopSelf();
         } catch (UnknownHostException e) {
             e.printStackTrace();
+            return e.getLocalizedMessage();
         } catch (IOException e) {
             e.printStackTrace();
+            return e.getLocalizedMessage();
         }
-        return "failure";
     }
 }
