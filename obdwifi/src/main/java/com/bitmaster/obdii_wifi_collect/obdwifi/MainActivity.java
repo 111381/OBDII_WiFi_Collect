@@ -10,15 +10,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.bitmaster.obdii_wifi_collect.obdwifi.io.TcpClient;
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.TcpClientService;
 
 
 public class MainActivity extends ActionBarActivity {
 
-    private TcpClient tcpClient = null;
-    public static final int TCP_SERVER_PORT = 35000;
-    public static final String SERVER_IP_ADDRESS = "192.168.0.10";
+    //public static final int TCP_SERVER_PORT = 35000;
+    //public static final String SERVER_IP_ADDRESS = "192.168.0.10";
+    public static final int TCP_SERVER_PORT = 80;
+    public static final String SERVER_IP_ADDRESS = "192.168.50.2";//proekspert.ee
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,9 +30,8 @@ public class MainActivity extends ActionBarActivity {
                     .commit();
         }
 
-        this.tcpClient = new TcpClient();
-        tcpClient.runTcpClient();
-        finish();
+        this.runTcpClientAsService();
+        //finish();
     }
     //replace runTcpClient() at onCreate with this method if you want to run tcp client as a service
     private void runTcpClientAsService() {
