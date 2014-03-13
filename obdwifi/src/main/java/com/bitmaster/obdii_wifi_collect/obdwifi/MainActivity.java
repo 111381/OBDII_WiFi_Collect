@@ -33,11 +33,25 @@ public class MainActivity extends ActionBarActivity {
         this.runTcpClientAsService();
         //finish();
     }
-    //replace runTcpClient() at onCreate with this method if you want to run tcp client as a service
+
+    // If the startService(intent) method is called and the service is not yet running,
+    // the service object is created and the onCreate() method of the service is called.
+
+    // If startService(intent) is called while the service is running, its onStartCommand() is also called.
+    // Therefore your service needs to be prepared that onStartCommand() can be called several time
     private void runTcpClientAsService() {
-        Intent lIntent = new Intent(this.getApplicationContext(), TcpClientService.class);
-        this.startService(lIntent);
+        // use this to start and trigger a service
+        Intent i = new Intent(this.getApplicationContext(), TcpClientService.class);
+        // potentially add data to the intent
+        i.putExtra("KEY1", "Value to be used by the service");
+        //Alternatively, you can also start a service via the bindService() method call.
+        //This allows you to communicate directly with the service.
+        this.startService(i);
+
+        //one call to the stopService() method stops the service
+        //this.stopService(i);
     }
+
 
 
 

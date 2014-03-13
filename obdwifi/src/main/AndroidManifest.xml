@@ -21,4 +21,11 @@
 
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <service
+        android:name="TcpClientService"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/service_name"
+        >
+    </service>
+
 </manifest>

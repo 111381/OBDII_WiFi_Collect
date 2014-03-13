@@ -8,9 +8,12 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 
 import android.app.Service;
 import android.content.Intent;
+import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -21,15 +24,37 @@ import com.bitmaster.obdii_wifi_collect.obdwifi.MainActivity;
  */
 public class TcpClientService extends Service {
 
+    private final IBinder mBinder = new MyBinder();
+    private ArrayList<String> list = new ArrayList<String>();
+
+    //This allows you to communicate directly with the service.
     @Override
     public IBinder onBind(Intent arg0) {
-        return null;
+        return mBinder;
     }
     @Override
     public void onCreate() {
         runTcpClient();
         this.stopSelf();
     }
+    // can be called several times
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        //TODO do something useful
+        return Service.START_STICKY;//Service is restarted if it gets terminated.
+    }
+
+    public class MyBinder extends Binder {
+        TcpClientService getService() {
+            return TcpClientService.this;
+        }
+    }
+
+    public List<String> getWordList() {
+        return list;
+    }
+
+
 
     private void runTcpClient() {
         try {
@@ -47,6 +72,9 @@ public class TcpClientService extends Service {
             Log.i("TcpClient", "received: " + inMsg);
             //close connection
             s.close();
+
+            //A service can terminate itself by calling the stopSelf() method.
+            //this.stopSelf();
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException e) {
