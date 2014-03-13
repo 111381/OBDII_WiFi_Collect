@@ -18,7 +18,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
-import com.bitmaster.obdii_wifi_collect.obdwifi.MainActivity;
+import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.SupportedPids;
 
 /**
  * Created by renet on 3/12/14.
@@ -32,6 +32,9 @@ public class TcpClientService extends Service {
 
     private final IBinder mBinder = new MyBinder();
     private ArrayList<String> list = new ArrayList<String>();
+
+    private SupportedPids pids = null;
+    private boolean continueRequests = true;
 
     //This allows you to communicate directly with the service.
     @Override
@@ -48,7 +51,8 @@ public class TcpClientService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        new RequestToSocketTask().execute("ATZ");
+        pids = new SupportedPids();
+        nextRequest();
 
         return Service.START_NOT_STICKY;//Service is not restarted if it gets terminated.
     }
@@ -74,17 +78,18 @@ public class TcpClientService extends Service {
         @Override
         protected String doInBackground(String... msg) {
 
-            return TcpClientService.runTcpClient(msg[0]);
+            return runTcpClient(msg[0]);
         }
         // onPostExecute displays the results of the AsyncTask.
         @Override
         protected void onPostExecute(String result) {
 
             list.add(result);
+            nextRequest();
         }
     }
 
-    private static String runTcpClient(String outMsg) {
+    private String runTcpClient(String outMsg) {
         try {
             Log.i("TcpClient", "creating socket: " + SERVER_IP_ADDRESS + ":" + TCP_SERVER_PORT);
             InetAddress ip = InetAddress.getByName(SERVER_IP_ADDRESS);
@@ -96,7 +101,11 @@ public class TcpClientService extends Service {
             out.flush();
             Log.i("TcpClient", "sent: " + outMsg);
             //accept server response
-            String inMsg = in.readLine() + System.getProperty("line.separator");
+            int character = 0;
+            String inMsg = "";
+            while((character = in.read()) != 62) { // EOL == '>'
+                inMsg = inMsg + Character.toString((char) character);
+            }
             Log.i("TcpClient", "received: " + inMsg);
             //close connection
             s.close();
@@ -107,6 +116,20 @@ public class TcpClientService extends Service {
         } catch (IOException e) {
             e.printStackTrace();
             return e.getLocalizedMessage();
+        }
+    }
+    // call recursively
+    private void nextRequest() {
+
+        // First do init requests once
+        String pid = this.pids.getNextInit();
+        if(pid != null) {
+            new RequestToSocketTask().execute(pid);
+        }
+        // While interrupted
+        else if(this.continueRequests) {
+            pid = this.pids.getNextPid();
+            new RequestToSocketTask().execute(pid);
         }
     }
 }
