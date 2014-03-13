@@ -24,46 +24,60 @@ import com.bitmaster.obdii_wifi_collect.obdwifi.MainActivity;
  */
 public class TcpClientService extends Service {
 
+    //public static final int TCP_SERVER_PORT = 35000;
+    //public static final String SERVER_IP_ADDRESS = "192.168.0.10";
+    private static final int TCP_SERVER_PORT = 80;
+    private static final String SERVER_IP_ADDRESS = "192.168.50.2";//proekspert.ee
+
     private final IBinder mBinder = new MyBinder();
     private ArrayList<String> list = new ArrayList<String>();
 
     //This allows you to communicate directly with the service.
     @Override
     public IBinder onBind(Intent arg0) {
+
         return mBinder;
     }
     @Override
     public void onCreate() {
-        runTcpClient();
-        this.stopSelf();
+
+        //runTcpClient();
+        //this.stopSelf();
+        list.add("onCreate");
     }
     // can be called several times
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        //TODO do something useful
-        return Service.START_STICKY;//Service is restarted if it gets terminated.
+
+        list.add("ATZ");
+        list.add("0100");
+
+        return Service.START_NOT_STICKY;//Service is restarted if it gets terminated.
     }
 
     public class MyBinder extends Binder {
-        TcpClientService getService() {
+
+        public TcpClientService getService() {
+
             return TcpClientService.this;
         }
     }
 
     public List<String> getWordList() {
+
         return list;
     }
 
 
 
-    private void runTcpClient() {
+    /*private void runTcpClient() {
         try {
-            InetAddress ip = InetAddress.getByName(MainActivity.SERVER_IP_ADDRESS);
-            Socket s = new Socket(ip, MainActivity.TCP_SERVER_PORT);
+            InetAddress ip = InetAddress.getByName(SERVER_IP_ADDRESS);
+            Socket s = new Socket(ip, TCP_SERVER_PORT);
             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
             //send output msg
-            String outMsg = "TCP connecting to " + MainActivity.TCP_SERVER_PORT + System.getProperty("line.separator");
+            String outMsg = "TCP connecting to " + TCP_SERVER_PORT + System.getProperty("line.separator");
             out.write(outMsg);
             out.flush();
             Log.i("TcpClient", "sent: " + outMsg);
@@ -80,5 +94,5 @@ public class TcpClientService extends Service {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
+    }*/
 }

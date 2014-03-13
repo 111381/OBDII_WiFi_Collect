@@ -17,15 +17,24 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name="com.bitmaster.obdii_wifi_collect.obdwifi.io.TcpClientService"
+            android:icon="@drawable/ic_launcher"
+            android:label="@string/service_name"
+            >
+        </service>
+
+        <receiver android:name="com.bitmaster.obdii_wifi_collect.obdwifi.receivers.ScheduleReceiver" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name="com.bitmaster.obdii_wifi_collect.obdwifi.receivers.StartServiceReceiver" >
+        </receiver>
     </application>
 
     <uses-permission android:name="android.permission.INTERNET"/>
-
-    <service
-        android:name="TcpClientService"
-        android:icon="@drawable/ic_launcher"
-        android:label="@string/service_name"
-        >
-    </service>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
 </manifest>

@@ -1,7 +1,11 @@
 package com.bitmaster.obdii_wifi_collect.obdwifi;
 
+import android.app.ListActivity;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
-import android.support.v7.app.ActionBarActivity;
+import android.content.ServiceConnection;
+import android.os.IBinder;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -9,30 +13,76 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.Toast;
 
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.TcpClientService;
 
+import java.util.ArrayList;
+import java.util.List;
 
-public class MainActivity extends ActionBarActivity {
 
-    //public static final int TCP_SERVER_PORT = 35000;
-    //public static final String SERVER_IP_ADDRESS = "192.168.0.10";
-    public static final int TCP_SERVER_PORT = 80;
-    public static final String SERVER_IP_ADDRESS = "192.168.50.2";//proekspert.ee
+public class MainActivity extends ListActivity {
+
+    private TcpClientService s = null;
+    private ArrayAdapter<String> adapter = null;
+    private List<String> wordList = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        if (savedInstanceState == null) {
+        /*if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
                     .add(R.id.container, new PlaceholderFragment())
                     .commit();
-        }
+        }*/
+        wordList = new ArrayList<String>();
+        adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, wordList);
+        this.setListAdapter(adapter);
 
-        this.runTcpClientAsService();
+        //this.runTcpClientAsService();
         //finish();
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Intent intent= new Intent(this, TcpClientService.class);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unbindService(mConnection);
+    }
+
+    private ServiceConnection mConnection = new ServiceConnection() {
+
+        public void onServiceConnected(ComponentName className, IBinder binder) {
+            TcpClientService.MyBinder b = (TcpClientService.MyBinder) binder;
+            s = b.getService();
+            Toast.makeText(MainActivity.this, "Connected", Toast.LENGTH_SHORT).show();
+        }
+
+        public void onServiceDisconnected(ComponentName className) {
+            Toast.makeText(MainActivity.this, "Disconnected", Toast.LENGTH_SHORT).show();
+            s = null;
+        }
+    };
+
+    public void onClick(View view) {
+        if (s != null) {
+            Toast.makeText(this, "Number of elements" + s.getWordList().size(), Toast.LENGTH_SHORT).show();
+            wordList.clear();
+            wordList.addAll(s.getWordList());
+            adapter.notifyDataSetChanged();
+        }
+    }
+
+
+
 
     // If the startService(intent) method is called and the service is not yet running,
     // the service object is created and the onCreate() method of the service is called.
@@ -51,7 +101,6 @@ public class MainActivity extends ActionBarActivity {
         //one call to the stopService() method stops the service
         //this.stopService(i);
     }
-
 
 
 
