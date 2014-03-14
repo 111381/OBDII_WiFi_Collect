@@ -15,7 +15,7 @@ public class SupportedPids {
 
     public SupportedPids() {
 
-        initCommands.add("ATZ"); //reset
+        //initCommands.add("ATZ"); //reset
         initCommands.add("ATDP"); //display protocol
         initCommands.add("ATSP3");//set ISO 9141-2 protocol
         initCommands.add("ATE0 ");// echo off
@@ -45,10 +45,12 @@ public class SupportedPids {
 
     public String getNextPid() {
 
-        if(!this.it.hasNext()) {
+        if(this.it.hasNext()) {
+            return it.next();
+        } else {
             this.it = commands.listIterator(0);
+            return null;
         }
-        return it.next();
     }
 
     public String getNextInit() {

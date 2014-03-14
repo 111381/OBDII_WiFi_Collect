@@ -4,10 +4,10 @@ import android.os.Environment;
 import android.util.Log;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -16,38 +16,42 @@ import java.util.List;
  */
 public class WriteDown {
 
-    private String filename = "OBDII_logfile.txt";
-    private File file = null;
-    private FileOutputStream outputStream = null;
-    private List<String> rows = new ArrayList<String>();
+    private final String FILENAME = "OBDIILog.txt";
 
-    public WriteDown() throws IOException {
+    public WriteDown(List<String> rowsToWrite) throws IOException {
+
+        String csvLine = this.formatToCsvLine(rowsToWrite);
 
         if(this.isExternalStorageWritable()) {
-            this.file = new File(Environment.getExternalStorageDirectory(), this.filename);
+
+            File file = new File(Environment.getExternalStorageDirectory(), this.FILENAME);
             Log.i("WriteDown", "directory: " + Environment.getExternalStorageDirectory().getAbsolutePath());
-        } else throw new IOException("External storage is not writable");
+
+            FileOutputStream outputStream = new FileOutputStream(file, true); //append==true
+            outputStream.write(csvLine.getBytes());
+            outputStream.close();
+
+        } else {
+            throw new IOException("External storage is not writable");
+        }
 
     }
 
-    public void addRow (String row) {
+    private static  String formatToCsvLine(List<String> rows) {
 
-        rows.add(row);
-    }
-
-    public void writeToFile () throws IOException {
-
-        this.outputStream = new FileOutputStream(this.file, true);
+        String line = "";
         Iterator<String> it = rows.iterator();
         while(it.hasNext()) {
-            String row = it.next() + "\n";
-            outputStream.write(row.getBytes());
+            line += (it.next() + ",");
         }
-        outputStream.close();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+        String currentDateandTime = sdf.format(new Date());
+
+        return (currentDateandTime + "," + line + ";\n");
     }
 
     /* Checks if external storage is available for read and write */
-    private boolean isExternalStorageWritable() {
+    private static boolean isExternalStorageWritable() {
         String state = Environment.getExternalStorageState();
         if (Environment.MEDIA_MOUNTED.equals(state)) {
             return true;
