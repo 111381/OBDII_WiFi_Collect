@@ -42,9 +42,9 @@ public class WriteDown {
         String line = "";
         Iterator<String> it = rows.iterator();
         while(it.hasNext()) {
-            line += (it.next() + ",");
+            line += (it.next()).replace("\n", ",").replace("\r", ",");
         }
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+        SimpleDateFormat sdf = new SimpleDateFormat("HHmmss");
         String currentDateandTime = sdf.format(new Date());
 
         return (currentDateandTime + "," + line + ";\n");

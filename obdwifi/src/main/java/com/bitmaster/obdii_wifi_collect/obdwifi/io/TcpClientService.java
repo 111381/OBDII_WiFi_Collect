@@ -34,7 +34,10 @@ public class TcpClientService extends Service {
     private SupportedPids pids = null;
     //TODO:interrupt by user
     private boolean continueRequests = true;
-    private boolean initDone = false;
+    private Socket socket = null;
+    private InetAddress ip = null;
+    //Static value for calculating process time
+    //private static long time = System.currentTimeMillis();
 
     //This allows you to communicate directly with the service.
     @Override
@@ -44,22 +47,21 @@ public class TcpClientService extends Service {
     }
     @Override
     public void onCreate() {
-        //A service can terminate itself by calling the stopSelf() method.
-        //this.stopSelf();
+
     }
     @Override
     public void onDestroy() {
 
+        //TODO: close connection
+        //socket.close();
     }
     // can be called several times
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        pids = new SupportedPids();
-        //start requests to server with reset command
-        new RequestToSocketTask().execute("ATZ");
+        new RequestToCreateSocket().execute("");
 
-        return Service.START_NOT_STICKY;//Service is not restarted if it gets terminated.
+        return Service.START_STICKY;//Service is restarted if it gets terminated.
     }
 
     public class MyBinder extends Binder {
@@ -75,6 +77,26 @@ public class TcpClientService extends Service {
         return list;
     }
 
+    private class RequestToCreateSocket extends AsyncTask<String, Void, String> {
+        @Override
+        protected String doInBackground(String... msg) {
+            try {
+                if(socket != null && socket.isConnected()) {
+                    socket.close();
+                }
+                ip = InetAddress.getByName(SERVER_IP_ADDRESS);
+                socket = new Socket(ip, TCP_SERVER_PORT);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            pids = new SupportedPids();
+            //start requests to server with reset command
+            new RequestToSocketTask().execute("ATZ");
+
+            return null;
+        }
+    }
+
     // Uses AsyncTask to create a task away from the main UI thread.
     //Once the socket is created, the AsyncTask sends string to server.
     // responsed InputStream is converted into a string, which is
@@ -83,20 +105,26 @@ public class TcpClientService extends Service {
         @Override
         protected String doInBackground(String... msg) {
 
+            if(socket == null) {
+                return "Cannot initialize socket to address" + SERVER_IP_ADDRESS;
+            }
             return runTcpClient(msg[0]);
         }
         // onPostExecute displays the results of the AsyncTask.
         @Override
         protected void onPostExecute(String result) {
 
+            if(socket == null || socket.isClosed()) {
+                new RequestToCreateSocket().execute("");
+            }
             list.add(result);
             String pid;
             // call recursively:
             // First do init requests since response 'null'
-            if(!initDone) {
+            if(!pids.isInitDone()) {
                 pid = pids.getNextInit();
                 if(pid == null) {
-                    initDone = true;
+                    pids.setInitDone(true);
                 }
             } else {
                 pid = pids.getNextPid();
@@ -110,6 +138,7 @@ public class TcpClientService extends Service {
                     list.clear();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    list.add(e.getLocalizedMessage());
                 }
                 if(continueRequests) { //next iteration until interrupt
                     pid = pids.getNextPid();
@@ -121,8 +150,6 @@ public class TcpClientService extends Service {
 
     private String runTcpClient(String outMsg) {
         try {
-            InetAddress ip = InetAddress.getByName(SERVER_IP_ADDRESS);
-            Socket socket = new Socket(ip, TCP_SERVER_PORT);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             //send output msg
@@ -136,8 +163,6 @@ public class TcpClientService extends Service {
                 inMsg = inMsg + Character.toString((char) character);
             }
             Log.i("TcpClient", "received: " + inMsg);
-            //close connection
-            socket.close();
 
             return inMsg;
 

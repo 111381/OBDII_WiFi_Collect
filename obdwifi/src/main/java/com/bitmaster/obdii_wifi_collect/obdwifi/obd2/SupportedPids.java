@@ -12,13 +12,14 @@ public class SupportedPids {
     private List<String> initCommands = new ArrayList<String>();
     private Iterator<String> it = null;
     private Iterator<String> initIt = null;
+    private boolean initDone = false;
 
     public SupportedPids() {
 
         //initCommands.add("ATZ"); //reset
         initCommands.add("ATDP"); //display protocol
         initCommands.add("ATSP3");//set ISO 9141-2 protocol
-        initCommands.add("ATE0 ");// echo off
+        //initCommands.add("ATE0 ");// echo off
         initCommands.add("0100");//PIDs supported [01 - 20]
         initCommands.add("0120");//PIDs supported [21 - 40]
         commands.add("0101");//Monitor status since DTCs cleared. (Includes malfunction indicator lamp (MIL) status and number of DTCs.)
@@ -60,5 +61,13 @@ public class SupportedPids {
         } else {
             return null;
         }
+    }
+
+    public boolean isInitDone() {
+        return initDone;
+    }
+
+    public void setInitDone(boolean initDone) {
+        this.initDone = initDone;
     }
 }
