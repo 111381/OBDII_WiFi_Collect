@@ -77,11 +77,49 @@ public class TcpClientService extends Service {
         return list;
     }
 
+    private void requestLogic(String response) {
+
+        if(socket == null || socket.isClosed()) {
+            new RequestToCreateSocket().execute("");
+            return;
+        }
+        list.add(response);
+
+        String pid;
+        // call recursively:
+        // First do init requests since response 'null'
+        if(!pids.isInitDone()) {
+            pid = pids.getNextInit();
+            if(pid == null) {
+                pids.setInitDone(true);
+            }
+        } else {
+            pid = pids.getNextPid();
+        }
+        // next request with next PID
+        if(pid != null) {
+            new RequestToSocketTask().execute(pid);
+        } else { //write list to file and clear list
+            try {
+                new WriteDown(list);
+                list.clear();
+            } catch (IOException e) {
+                e.printStackTrace();
+                list.add(e.getLocalizedMessage());
+            }
+            if(continueRequests) { //next iteration until interrupt
+                pid = pids.getNextPid();
+                new RequestToSocketTask().execute(pid);
+            }
+        }
+    }
+
+    // Uses AsyncTask to create a task away from the main UI thread.
     private class RequestToCreateSocket extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... msg) {
             try {
-                if(socket != null && socket.isConnected()) {
+                if (socket != null && socket.isConnected()) {
                     socket.close();
                 }
                 ip = InetAddress.getByName(SERVER_IP_ADDRESS);
@@ -90,10 +128,15 @@ public class TcpClientService extends Service {
                 e.printStackTrace();
             }
             pids = new SupportedPids();
-            //start requests to server with reset command
-            new RequestToSocketTask().execute("ATZ");
 
-            return null;
+            return "ATZ"; //run reset command as result task
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+
+            //start requests to server with reset command
+            new RequestToSocketTask().execute(result);
         }
     }
 
@@ -105,46 +148,13 @@ public class TcpClientService extends Service {
         @Override
         protected String doInBackground(String... msg) {
 
-            if(socket == null) {
-                return "Cannot initialize socket to address" + SERVER_IP_ADDRESS;
-            }
             return runTcpClient(msg[0]);
         }
         // onPostExecute displays the results of the AsyncTask.
         @Override
         protected void onPostExecute(String result) {
 
-            if(socket == null || socket.isClosed()) {
-                new RequestToCreateSocket().execute("");
-            }
-            list.add(result);
-            String pid;
-            // call recursively:
-            // First do init requests since response 'null'
-            if(!pids.isInitDone()) {
-                pid = pids.getNextInit();
-                if(pid == null) {
-                    pids.setInitDone(true);
-                }
-            } else {
-                pid = pids.getNextPid();
-            }
-            // next request with next PID
-            if(pid != null) {
-                new RequestToSocketTask().execute(pid);
-            } else { //write list to file and clear list
-                try {
-                    new WriteDown(list);
-                    list.clear();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    list.add(e.getLocalizedMessage());
-                }
-                if(continueRequests) { //next iteration until interrupt
-                    pid = pids.getNextPid();
-                    new RequestToSocketTask().execute(pid);
-                }
-            }
+            requestLogic(result);
         }
     }
 
