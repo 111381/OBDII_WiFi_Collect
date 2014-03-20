@@ -18,7 +18,9 @@ import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.TcpClientService;
+import com.bitmaster.obdii_wifi_collect.obdwifi.io.WriteDown;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +31,7 @@ public class MainActivity extends ListActivity {
     private ArrayAdapter<String> adapter = null;
     private List<String> wordList = null;
     private boolean mIsBound = false;
+    private boolean requestsOn = false;
     /** Messenger for communicating with service. */
     private Messenger mService = null;
 
@@ -69,10 +72,16 @@ public class MainActivity extends ListActivity {
 
     public void startRequestsToOBDII(View v) {
         if (!mIsBound) return;
-        // Create and send a message to the service, using a supported 'what' value
-        Message msg = Message.obtain(null, TcpClientService.MSG_START_REQUESTS, "Starting requests to OBDII");
-        //add to first message client side Messenger which has incoming handler
-        msg.replyTo = mMessenger;
+        Message msg;
+        if(this.requestsOn) {
+            msg = Message.obtain(null, TcpClientService.MSG_STOP_REQUESTS, "Stopping requests to OBDII");
+            this.requestsOn = false;
+        } else {
+            msg = Message.obtain(null, TcpClientService.MSG_START_REQUESTS, "Starting requests to OBDII");
+            //add to first message client side Messenger which has incoming handler
+            msg.replyTo = mMessenger;
+            this.requestsOn = true;
+        }
         try {
             mService.send(msg);
         } catch (RemoteException e) {
@@ -132,7 +141,17 @@ public class MainActivity extends ListActivity {
                     wordList.add(msg.obj.toString());
                     adapter.notifyDataSetChanged();
                     break;
-
+                case TcpClientService.MSG_WRITE_LIST_TO_FILE:
+                    try {
+                        new WriteDown(wordList);
+                        wordList.clear();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        Toast.makeText(getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+                    }
+                    wordList.clear();
+                    adapter.notifyDataSetChanged();
+                    break;
                 default:
                     super.handleMessage(msg);
             }

@@ -38,16 +38,15 @@ public class TcpClientService extends Service {
      */
     public static final int MSG_START_REQUESTS = 0;
     public static final int MSG_OBDII_RESPONSE = 1;
+    public static final int MSG_WRITE_LIST_TO_FILE = 2;
+    public static final int MSG_STOP_REQUESTS = 3;
     private Messenger client = null;
 
-    private ArrayList<String> list = new ArrayList<String>();
     private SupportedPids pids = null;
     private Socket socket = null;
     private AsyncTask<String, Void, String> tcpTask = null;
-    //TODO:interrupt by user
+
     private boolean continueRequests = true;
-    //Static value for calculating process time
-    //private static long time = System.currentTimeMillis();
 
     @Override
     public void onCreate() {
@@ -73,8 +72,6 @@ public class TcpClientService extends Service {
     @Override
     public IBinder onBind(Intent arg0) {
 
-        Toast.makeText(getApplicationContext(), "binding", Toast.LENGTH_SHORT).show();
-
         return mMessenger.getBinder();
     }
     /**
@@ -92,6 +89,10 @@ public class TcpClientService extends Service {
                     tcpTask = new RequestToSocketTask().execute("ATZ");
                     Toast.makeText(getApplicationContext(), msg.obj.toString(), Toast.LENGTH_SHORT).show();
                     break;
+                case TcpClientService.MSG_STOP_REQUESTS:
+                    continueRequests = false;
+                    Toast.makeText(getApplicationContext(), msg.obj.toString(), Toast.LENGTH_SHORT).show();
+                    break;
                 default:
                     super.handleMessage(msg);
             }
@@ -106,6 +107,19 @@ public class TcpClientService extends Service {
 
         if(client != null) {
             Message msg = Message.obtain(null, TcpClientService.MSG_OBDII_RESPONSE, line);
+            try {
+                client.send(msg);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+                Toast.makeText(getApplicationContext(), "Cannot send messages to UI", Toast.LENGTH_LONG).show();
+            }
+        } else {
+            Toast.makeText(getApplicationContext(), "Cannot send messages to UI", Toast.LENGTH_LONG).show();
+        }
+    }
+    private void saveToFileMessage() {
+        if(client != null) {
+            Message msg = Message.obtain(null, TcpClientService.MSG_WRITE_LIST_TO_FILE);
             try {
                 client.send(msg);
             } catch (RemoteException e) {
@@ -147,7 +161,6 @@ public class TcpClientService extends Service {
 
     private void requestLogic(String response) {
 
-        list.add(response);
         sendStringToClient(response);
 
         String pid;
@@ -164,14 +177,8 @@ public class TcpClientService extends Service {
         // next request with next PID
         if(pid != null) {
             new RequestToSocketTask().execute(pid);
-        } else { //write list to file and clear list
-            try {
-                new WriteDown(list);
-                list.clear();
-            } catch (IOException e) {
-                e.printStackTrace();
-                Toast.makeText(getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
-            }
+        } else { //switch boolean to write down list on next response
+            saveToFileMessage();
             if(continueRequests) { //next iteration until interrupt
                 pid = pids.getNextPid();
                 new RequestToSocketTask().execute(pid);
