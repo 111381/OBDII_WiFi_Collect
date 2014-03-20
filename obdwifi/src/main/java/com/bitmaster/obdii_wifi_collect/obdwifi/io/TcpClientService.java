@@ -18,6 +18,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.RemoteException;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -35,7 +36,9 @@ public class TcpClientService extends Service {
      * service to supply a new value, and will be sent by the service to
      * any registered clients with the new value.
      */
-    public static final int MSG_SET_VALUE = 3;
+    public static final int MSG_START_REQUESTS = 0;
+    public static final int MSG_OBDII_RESPONSE = 1;
+    private Messenger client = null;
 
     private ArrayList<String> list = new ArrayList<String>();
     private SupportedPids pids = null;
@@ -70,9 +73,6 @@ public class TcpClientService extends Service {
     @Override
     public IBinder onBind(Intent arg0) {
 
-        this.pids = new SupportedPids();
-        tcpTask = new RequestToSocketTask().execute("ATZ");
-
         Toast.makeText(getApplicationContext(), "binding", Toast.LENGTH_SHORT).show();
 
         return mMessenger.getBinder();
@@ -84,8 +84,13 @@ public class TcpClientService extends Service {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case TcpClientService.MSG_SET_VALUE:
-                    Toast.makeText(getApplicationContext(), msg.obj.toString(), Toast.LENGTH_SHORT).show();//TODO: something
+                case TcpClientService.MSG_START_REQUESTS:
+                    //Get messenger to send messages to UI
+                    client = msg.replyTo;
+                    //Create fresh queue of PID and start requests with reset
+                    pids = new SupportedPids();
+                    tcpTask = new RequestToSocketTask().execute("ATZ");
+                    Toast.makeText(getApplicationContext(), msg.obj.toString(), Toast.LENGTH_SHORT).show();
                     break;
                 default:
                     super.handleMessage(msg);
@@ -97,11 +102,21 @@ public class TcpClientService extends Service {
      */
     final Messenger mMessenger = new Messenger(new IncomingHandler());
 
+    private void sendStringToClient(String line) {
 
-    public List<String> getWordList() {
-
-        return list;
+        if(client != null) {
+            Message msg = Message.obtain(null, TcpClientService.MSG_OBDII_RESPONSE, line);
+            try {
+                client.send(msg);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+                Toast.makeText(getApplicationContext(), "Cannot send messages to UI", Toast.LENGTH_LONG).show();
+            }
+        } else {
+            Toast.makeText(getApplicationContext(), "Cannot send messages to UI", Toast.LENGTH_LONG).show();
+        }
     }
+
 
     private String runTcpClient(String outMsg) {
         try {
@@ -133,6 +148,7 @@ public class TcpClientService extends Service {
     private void requestLogic(String response) {
 
         list.add(response);
+        sendStringToClient(response);
 
         String pid;
         // call recursively:
@@ -154,7 +170,7 @@ public class TcpClientService extends Service {
                 list.clear();
             } catch (IOException e) {
                 e.printStackTrace();
-                list.add(e.getLocalizedMessage());
+                Toast.makeText(getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
             }
             if(continueRequests) { //next iteration until interrupt
                 pid = pids.getNextPid();

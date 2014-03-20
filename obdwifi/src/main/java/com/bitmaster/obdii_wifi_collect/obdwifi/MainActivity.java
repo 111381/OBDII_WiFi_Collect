@@ -41,7 +41,6 @@ public class MainActivity extends ListActivity {
         adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, wordList);
         this.setListAdapter(adapter);
 
-        //runTcpClientAsService();
         this.doBindService();
     }
 
@@ -65,42 +64,21 @@ public class MainActivity extends ListActivity {
 
     public void onClick(View view) {
 
-        sayHello(view);
-
-        /*if (service != null) {
-            Toast.makeText(this, "Number of elements" + service.getWordList().size(), Toast.LENGTH_SHORT).show();
-            wordList.clear();
-            wordList.addAll(service.getWordList());
-            adapter.notifyDataSetChanged();
-        }*/
+        startRequestsToOBDII(view);
     }
-    public void sayHello(View v) {
+
+    public void startRequestsToOBDII(View v) {
         if (!mIsBound) return;
         // Create and send a message to the service, using a supported 'what' value
-        Message msg = Message.obtain(null, TcpClientService.MSG_SET_VALUE, "MESSAGE");
+        Message msg = Message.obtain(null, TcpClientService.MSG_START_REQUESTS, "Starting requests to OBDII");
+        //add to first message client side Messenger which has incoming handler
+        msg.replyTo = mMessenger;
         try {
             mService.send(msg);
         } catch (RemoteException e) {
             e.printStackTrace();
         }
     }
-
-
-
-    // If the startService(intent) method is called and the service is not yet running,
-    // the service object is created and the onCreate() method of the service is called.
-
-    // If startService(intent) is called while the service is running, its onStartCommand() is also called.
-    // Therefore your service needs to be prepared that onStartCommand() can be called several time
-    private void runTcpClientAsService() {
-        // use this to start and trigger a service
-        Intent i = new Intent(this.getApplicationContext(), TcpClientService.class);
-        this.startService(i);
-
-        //one call to the stopService() method stops the service
-        //this.stopService(i);
-    }
-
     /**
      * Class for interacting with the main interface of the service.
      */
@@ -114,22 +92,6 @@ public class MainActivity extends ListActivity {
             // representation of that from the raw service object.
             mService = new Messenger(binder);
             Toast.makeText(MainActivity.this, "TcpServiceConnected", Toast.LENGTH_SHORT).show();
-            // We want to monitor the service for as long as we are
-            // connected to it.
-            /*try {
-                Message msg = Message.obtain(null, TcpClientService.MSG_REGISTER_CLIENT);
-                msg.replyTo = mMessenger;
-                mService.send(msg);
-
-                // Give it some value as an example.
-                msg = Message.obtain(null, TcpClientService.MSG_SET_VALUE, this.hashCode(), 0);
-                mService.send(msg);
-            } catch (RemoteException e) {
-                // In this case the service has crashed before we could even
-                // do anything with it; we can count on soon being
-                // disconnected (and then reconnected if it can be restarted)
-                // so there is no need to do anything here.
-            }*/
         }
 
         public void onServiceDisconnected(ComponentName className) {
@@ -160,6 +122,26 @@ public class MainActivity extends ListActivity {
             mIsBound = false;
         }
     }
+
+    // The Handler that gets information back from the Service
+    class IncomingHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case TcpClientService.MSG_OBDII_RESPONSE:
+                    wordList.add(msg.obj.toString());
+                    adapter.notifyDataSetChanged();
+                    break;
+
+                default:
+                    super.handleMessage(msg);
+            }
+        }
+    };
+    /**
+     * Target we publish for clients to send messages to IncomingHandler.
+     */
+    final Messenger mMessenger = new Messenger(new IncomingHandler());
 
 
 
