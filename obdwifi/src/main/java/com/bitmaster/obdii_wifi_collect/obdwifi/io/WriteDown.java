@@ -24,13 +24,12 @@ public class WriteDown {
 
     public WriteDown(List<String> rowsToWrite, Location location) throws IOException {
 
-        String csvLine = this.formatToCsvLine(rowsToWrite);
-
         if(location != null){
             this.latitude = location.getLatitude();
             this.longitude = location.getLongitude();
             this.speed = location.getSpeed();
         }
+        String csvLine = this.formatToCsvLine(rowsToWrite);
 
         if(this.isExternalStorageWritable()) {
 
@@ -54,7 +53,7 @@ public class WriteDown {
         while(it.hasNext()) {
             line += (it.next()).replace("\n", ",").replace("\r", ",");
         }
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HHmmss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String currentDateandTime = sdf.format(new Date());
 
         return (currentDateandTime +

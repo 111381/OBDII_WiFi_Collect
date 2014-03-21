@@ -1,6 +1,7 @@
 package com.bitmaster.obdii_wifi_collect.obdwifi.loc;
 
 import android.content.Context;
+import android.location.GpsStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -22,13 +23,16 @@ public class GpsLocation {
         locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
     }
 
-    public Location getLocation() throws IOException {
+    public Location getLocation() {
         if(!locationManager.isProviderEnabled(PROVIDER)){
-            throw new IOException("GPS is not available!");
+            return null;
         }
         return this.locationManager.getLastKnownLocation(PROVIDER);
     }
     public boolean getLocationUpdated() {
+        if(!locationManager.isProviderEnabled(PROVIDER)){
+            return false;
+        }
         return this.locationUpdated;
     }
 

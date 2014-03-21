@@ -47,20 +47,19 @@ public class MainActivity extends ListActivity {
         adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, wordList);
         this.setListAdapter(adapter);
 
-        this.doBindService();
         this.gpsLocation = new GpsLocation(this);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        doBindService();
+        //doBindService();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        doUnbindService();
+        //doUnbindService();
     }
 
     @Override
@@ -71,25 +70,17 @@ public class MainActivity extends ListActivity {
 
     public void onClick(View view) {
 
-        startRequestsToOBDII(view);
+        bindToOBDII(view);
     }
 
-    public void startRequestsToOBDII(View v) {
-        if (!mIsBound) return;
-        Message msg;
+    public void bindToOBDII(View v) {
+
         if(this.requestsOn) {
-            msg = Message.obtain(null, TcpClientService.MSG_STOP_REQUESTS, "Stopping requests to OBDII");
+            this.doUnbindService();
             this.requestsOn = false;
         } else {
-            msg = Message.obtain(null, TcpClientService.MSG_START_REQUESTS, "Starting requests to OBDII");
-            //add to first message client side Messenger which has incoming handler
-            msg.replyTo = mMessenger;
+            this.doBindService();
             this.requestsOn = true;
-        }
-        try {
-            mService.send(msg);
-        } catch (RemoteException e) {
-            e.printStackTrace();
         }
     }
     /**
@@ -105,6 +96,15 @@ public class MainActivity extends ListActivity {
             // representation of that from the raw service object.
             mService = new Messenger(binder);
             Toast.makeText(MainActivity.this, "TcpServiceConnected", Toast.LENGTH_SHORT).show();
+
+            Message msg = Message.obtain(null, TcpClientService.MSG_START_REQUESTS);
+            //add to first message client side Messenger which has incoming handler
+            msg.replyTo = mMessenger;
+            try {
+                mService.send(msg);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
         }
 
         public void onServiceDisconnected(ComponentName className) {
@@ -123,15 +123,18 @@ public class MainActivity extends ListActivity {
         // we know will be running in our own process (and thus won't be
         // supporting component replacement by other applications).
         bindService(new Intent(MainActivity.this, TcpClientService.class), mConnection, Context.BIND_AUTO_CREATE);
-        //Toast.makeText(MainActivity.this, "BindingService", Toast.LENGTH_SHORT).show();
+        Toast.makeText(MainActivity.this, "BindingService", Toast.LENGTH_SHORT).show();
         mIsBound = true;
+        //clear screen
+        wordList.clear();
+        adapter.notifyDataSetChanged();
     }
 
     void doUnbindService() {
         if (mIsBound) {
             // Detach our existing connection.
             unbindService(mConnection);
-            Toast.makeText(MainActivity.this, "Unbind Service", Toast.LENGTH_LONG).show();
+            Toast.makeText(MainActivity.this, "Unbinding Service", Toast.LENGTH_LONG).show();
             mIsBound = false;
         }
     }
@@ -146,8 +149,8 @@ public class MainActivity extends ListActivity {
                     adapter.notifyDataSetChanged();
                     break;
                 case TcpClientService.MSG_WRITE_LIST_TO_FILE:
+                    Location loc = gpsLocation.getLocation();
                     try {
-                        Location loc = gpsLocation.getLocation();
                         new WriteDown(wordList, loc);
                     } catch (IOException e) {
                         e.printStackTrace();

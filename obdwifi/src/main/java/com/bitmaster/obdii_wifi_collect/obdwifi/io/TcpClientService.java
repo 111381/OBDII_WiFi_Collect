@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,7 @@ public class TcpClientService extends Service {
 
     public static final int TCP_SERVER_PORT = 35000;
     public static final String SERVER_IP_ADDRESS = "192.168.0.10";
+    public static final int SOCKET_CONN_TIMEOUT = 5000;
     /**
      * Command to service to set a new value.  This can be sent to the
      * service to supply a new value, and will be sent by the service to
@@ -41,7 +43,6 @@ public class TcpClientService extends Service {
     public static final int MSG_WRITE_LIST_TO_FILE = 2;
     public static final int MSG_STOP_REQUESTS = 3;
     private Messenger client = null;
-    private boolean continueRequests;
 
     private SupportedPids pids = null;
     private Socket socket = null;
@@ -81,17 +82,14 @@ public class TcpClientService extends Service {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case TcpClientService.MSG_START_REQUESTS:
-                    continueRequests = true;
                     //Get messenger to send messages to UI
                     client = msg.replyTo;
                     //Create fresh queue of PID and start requests with reset
                     pids = new SupportedPids();
                     tcpTask = new RequestToSocketTask().execute("ATZ");
-                    Toast.makeText(getApplicationContext(), msg.obj.toString(), Toast.LENGTH_SHORT).show();
                     break;
                 case TcpClientService.MSG_STOP_REQUESTS:
-                    continueRequests = false;
-                    Toast.makeText(getApplicationContext(), msg.obj.toString(), Toast.LENGTH_SHORT).show();
+                    //TODO
                     break;
                 default:
                     super.handleMessage(msg);
@@ -135,7 +133,8 @@ public class TcpClientService extends Service {
     private String runTcpClient(String outMsg) {
         try {
             InetAddress ip = InetAddress.getByName(SERVER_IP_ADDRESS);
-            this.socket = new Socket(ip, TCP_SERVER_PORT);
+            this.socket = new Socket();
+            this.socket.connect(new InetSocketAddress(ip, TCP_SERVER_PORT), SOCKET_CONN_TIMEOUT);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             //send output msg
@@ -153,7 +152,10 @@ public class TcpClientService extends Service {
 
             return inMsg;
 
-        } catch (IOException e) {
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            return ioe.getLocalizedMessage();
+        } catch (Exception e) {
             e.printStackTrace();
             return e.getLocalizedMessage();
         }
@@ -176,13 +178,11 @@ public class TcpClientService extends Service {
         }
         // next request with next PID
         if(pid != null) {
-            new RequestToSocketTask().execute(pid);
+            tcpTask = new RequestToSocketTask().execute(pid);
         } else { //switch boolean to write down list on next response
             saveToFileMessage();
-            if(continueRequests) { //next iteration until interrupt
-                pid = pids.getNextPid();
-                new RequestToSocketTask().execute(pid);
-            }
+            pid = pids.getNextPid();
+            tcpTask = new RequestToSocketTask().execute(pid);
         }
     }
     // Uses AsyncTask to create a task away from the main UI thread.
