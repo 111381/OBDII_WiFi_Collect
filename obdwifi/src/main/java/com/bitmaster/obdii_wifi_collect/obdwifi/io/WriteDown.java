@@ -1,5 +1,6 @@
 package com.bitmaster.obdii_wifi_collect.obdwifi.io;
 
+import android.location.Location;
 import android.os.Environment;
 import android.util.Log;
 
@@ -16,11 +17,20 @@ import java.util.List;
  */
 public class WriteDown {
 
-    private final String FILENAME = "OBDIILog.txt";
+    public final String FILENAME = "OBDIILog.csv";
+    private double latitude = 0.0;
+    private double longitude = 0.0;
+    private double speed = 0.0;
 
-    public WriteDown(List<String> rowsToWrite) throws IOException {
+    public WriteDown(List<String> rowsToWrite, Location location) throws IOException {
 
         String csvLine = this.formatToCsvLine(rowsToWrite);
+
+        if(location != null){
+            this.latitude = location.getLatitude();
+            this.longitude = location.getLongitude();
+            this.speed = location.getSpeed();
+        }
 
         if(this.isExternalStorageWritable()) {
 
@@ -37,17 +47,22 @@ public class WriteDown {
 
     }
 
-    private static  String formatToCsvLine(List<String> rows) {
+    private String formatToCsvLine(List<String> rows) {
 
         String line = "";
         Iterator<String> it = rows.iterator();
         while(it.hasNext()) {
             line += (it.next()).replace("\n", ",").replace("\r", ",");
         }
-        SimpleDateFormat sdf = new SimpleDateFormat("HHmmss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HHmmss");
         String currentDateandTime = sdf.format(new Date());
 
-        return (currentDateandTime + "," + line + ";\n");
+        return (currentDateandTime +
+                "," + line +
+                "," + Double.toString(this.latitude) +
+                "," + Double.toString(this.longitude) +
+                "," + Double.toString(this.speed) +
+                ";\n");
     }
 
     /* Checks if external storage is available for read and write */

@@ -41,12 +41,11 @@ public class TcpClientService extends Service {
     public static final int MSG_WRITE_LIST_TO_FILE = 2;
     public static final int MSG_STOP_REQUESTS = 3;
     private Messenger client = null;
+    private boolean continueRequests;
 
     private SupportedPids pids = null;
     private Socket socket = null;
     private AsyncTask<String, Void, String> tcpTask = null;
-
-    private boolean continueRequests = true;
 
     @Override
     public void onCreate() {
@@ -82,6 +81,7 @@ public class TcpClientService extends Service {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case TcpClientService.MSG_START_REQUESTS:
+                    continueRequests = true;
                     //Get messenger to send messages to UI
                     client = msg.replyTo;
                     //Create fresh queue of PID and start requests with reset

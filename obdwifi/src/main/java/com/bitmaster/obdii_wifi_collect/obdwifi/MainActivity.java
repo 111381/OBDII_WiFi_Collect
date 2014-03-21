@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.location.Location;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Bundle;
@@ -19,6 +20,7 @@ import android.widget.Toast;
 
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.TcpClientService;
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.WriteDown;
+import com.bitmaster.obdii_wifi_collect.obdwifi.loc.GpsLocation;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,6 +36,7 @@ public class MainActivity extends ListActivity {
     private boolean requestsOn = false;
     /** Messenger for communicating with service. */
     private Messenger mService = null;
+    private GpsLocation gpsLocation = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +48,7 @@ public class MainActivity extends ListActivity {
         this.setListAdapter(adapter);
 
         this.doBindService();
+        this.gpsLocation = new GpsLocation(this);
     }
 
     @Override
@@ -143,12 +147,15 @@ public class MainActivity extends ListActivity {
                     break;
                 case TcpClientService.MSG_WRITE_LIST_TO_FILE:
                     try {
-                        new WriteDown(wordList);
-                        wordList.clear();
+                        Location loc = gpsLocation.getLocation();
+                        new WriteDown(wordList, loc);
                     } catch (IOException e) {
                         e.printStackTrace();
                         Toast.makeText(getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
                     }
+                    //we do request location after initial OBD requests
+                    gpsLocation.requestLocation();
+                    //clear screen
                     wordList.clear();
                     adapter.notifyDataSetChanged();
                     break;
