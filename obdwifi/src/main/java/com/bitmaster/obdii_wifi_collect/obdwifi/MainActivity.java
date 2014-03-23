@@ -25,6 +25,8 @@ import com.bitmaster.obdii_wifi_collect.obdwifi.loc.GpsLocation;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 public class MainActivity extends ListActivity {
@@ -33,10 +35,12 @@ public class MainActivity extends ListActivity {
     private ArrayAdapter<String> adapter = null;
     private List<String> wordList = null;
     private boolean mIsBound = false;
-    private boolean requestsOn = false;
     /** Messenger for communicating with service. */
     private Messenger mService = null;
     private GpsLocation gpsLocation = null;
+    private static final int RESTART_CYCLE = 10;//restart dongle after writing lines
+    private static final long RESTART_PERIOD = 60*1000;//restart service after destroy self by msg
+    private static int restartCount = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,12 +79,10 @@ public class MainActivity extends ListActivity {
 
     public void bindToOBDII(View v) {
 
-        if(this.requestsOn) {
+        if(this.mIsBound) {
             this.doUnbindService();
-            this.requestsOn = false;
         } else {
             this.doBindService();
-            this.requestsOn = true;
         }
     }
     /**
@@ -96,7 +98,7 @@ public class MainActivity extends ListActivity {
             // representation of that from the raw service object.
             mService = new Messenger(binder);
             Toast.makeText(MainActivity.this, "TcpServiceConnected", Toast.LENGTH_SHORT).show();
-
+            //Create fresh queue of PID and start requests with reset
             Message msg = Message.obtain(null, TcpClientService.MSG_START_REQUESTS);
             //add to first message client side Messenger which has incoming handler
             msg.replyTo = mMessenger;
@@ -161,6 +163,26 @@ public class MainActivity extends ListActivity {
                     //clear screen
                     wordList.clear();
                     adapter.notifyDataSetChanged();
+                    //Do restart dongle sometimes
+                    /*if(++restartCount == RESTART_CYCLE) {
+                        //Create fresh queue of PID and start requests with reset
+                        msg = Message.obtain(null, TcpClientService.MSG_START_REQUESTS);
+                        msg.replyTo = mMessenger;
+                        try {
+                            mService.send(msg);
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        }
+                        restartCount = 0;
+                    }*/
+                    break;
+                case TcpClientService.MSG_STOP_REQUESTS:
+                    Toast.makeText(getApplicationContext(), msg.obj.toString(), Toast.LENGTH_SHORT).show();
+                    doUnbindService();
+                    //set Timer for restarting service
+                    TimerTask restartTask = new RestartServiceTask();
+                    Timer restartTimer = new Timer();
+                    restartTimer.schedule(restartTask, RESTART_PERIOD);
                     break;
                 default:
                     super.handleMessage(msg);
@@ -172,10 +194,24 @@ public class MainActivity extends ListActivity {
      */
     final Messenger mMessenger = new Messenger(new IncomingHandler());
 
+    /**
+     * Automatic restart service by timer after MSG_STOP_REQUESTS message from service
+     */
+    class RestartServiceTask extends TimerTask {
+        public void run() {
+            runOnUiThread(new Runnable(){
+
+                @Override
+                public void run() {
+                    doBindService();
+                }});
+        }
+    }
 
 
 
-    @Override
+
+   /* @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -193,5 +229,5 @@ public class MainActivity extends ListActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
-    }
+    }*/
 }

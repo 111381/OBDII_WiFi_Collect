@@ -8,13 +8,10 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
 
 import android.app.Service;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -54,7 +51,6 @@ public class TcpClientService extends Service {
     }
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
         return Service.START_STICKY;//Service is restarted if it gets terminated.
     }
     @Override
@@ -62,7 +58,7 @@ public class TcpClientService extends Service {
         //All cleanup (stopping threads, unregistering receivers)
         // should be complete upon returning from onDestroy().
         if(tcpTask != null) {
-            tcpTask.cancel(false);//do not interrupt finishing task
+            tcpTask.cancel(true);//do interrupt finishing task
         }
     }
     /**
@@ -88,9 +84,6 @@ public class TcpClientService extends Service {
                     pids = new SupportedPids();
                     tcpTask = new RequestToSocketTask().execute("ATZ");
                     break;
-                case TcpClientService.MSG_STOP_REQUESTS:
-                    //TODO
-                    break;
                 default:
                     super.handleMessage(msg);
             }
@@ -101,6 +94,10 @@ public class TcpClientService extends Service {
      */
     final Messenger mMessenger = new Messenger(new IncomingHandler());
 
+    /**
+     * Sends response string to client after every response
+     * @param line
+     */
     private void sendStringToClient(String line) {
 
         if(client != null) {
@@ -115,6 +112,10 @@ public class TcpClientService extends Service {
             Toast.makeText(getApplicationContext(), "Cannot send messages to UI", Toast.LENGTH_LONG).show();
         }
     }
+
+    /**
+     * Sends message to client after cycle of PID list
+     */
     private void saveToFileMessage() {
         if(client != null) {
             Message msg = Message.obtain(null, TcpClientService.MSG_WRITE_LIST_TO_FILE);
@@ -129,7 +130,30 @@ public class TcpClientService extends Service {
         }
     }
 
+    /**
+     * Sends message to client to unbind and destroy self
+     * @param reason
+     */
+    private void requestToStopService(String reason) {
 
+        if(client != null) {
+            Message msg = Message.obtain(null, TcpClientService.MSG_STOP_REQUESTS, reason);
+            try {
+                client.send(msg);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+                Toast.makeText(getApplicationContext(), "Cannot send messages to UI", Toast.LENGTH_LONG).show();
+            }
+        } else {
+            Toast.makeText(getApplicationContext(), "Cannot send messages to UI", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /**
+     * works as backround task of async thread
+     * @param outMsg
+     * @return
+     */
     private String runTcpClient(String outMsg) {
         try {
             InetAddress ip = InetAddress.getByName(SERVER_IP_ADDRESS);
@@ -144,19 +168,20 @@ public class TcpClientService extends Service {
             //accept server response
             int character = 0;
             String inMsg = "";
-            while((character = in.read()) != 62) { // EOL == '>'
+            int bytes = 0; // if end character not found  && if task is not cancelled
+            while(((character = in.read()) != 62) && (bytes < 30) && (!tcpTask.isCancelled())) { // EOL == '>'
                 inMsg = inMsg + Character.toString((char) character);
+                bytes++;
             }
             Log.i("TcpClient", "received: " + inMsg);
             socket.close();
 
             return inMsg;
 
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-            return ioe.getLocalizedMessage();
         } catch (Exception e) {
             e.printStackTrace();
+            requestToStopService(e.getLocalizedMessage());
+            tcpTask.cancel(true);
             return e.getLocalizedMessage();
         }
     }

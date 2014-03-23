@@ -17,7 +17,7 @@ import java.util.List;
  */
 public class WriteDown {
 
-    public final String FILENAME = "OBDIILog.csv";
+    private final String FILENAME = "OBDIILog.csv";
     private double latitude = 0.0;
     private double longitude = 0.0;
     private double speed = 0.0;
