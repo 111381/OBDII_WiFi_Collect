@@ -39,8 +39,9 @@ public class MainActivity extends ListActivity {
     private Messenger mService = null;
     private GpsLocation gpsLocation = null;
     private static final int RESTART_CYCLE = 10;//restart dongle after writing lines
-    private static final long RESTART_PERIOD = 60*1000;//restart service after destroy self by msg
+    private static final long RESTART_PERIOD = 5*1000;//restart service after destroy self by msg
     private static int restartCount = 0;
+    private Timer restartTimer = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +53,7 @@ public class MainActivity extends ListActivity {
         this.setListAdapter(adapter);
 
         this.gpsLocation = new GpsLocation(this);
+        this.restartTimer = new Timer();
     }
 
     @Override
@@ -114,7 +116,7 @@ public class MainActivity extends ListActivity {
             // unexpectedly disconnected -- that is, its process crashed.
             // Because it is running in our same process, we should never
             // see this happen.
-            Toast.makeText(MainActivity.this, "TcpServiceDisconnected", Toast.LENGTH_LONG).show();
+            Toast.makeText(MainActivity.this, "TcpServiceDisconnected", Toast.LENGTH_SHORT).show();
             mService = null;
         }
     };
@@ -136,7 +138,7 @@ public class MainActivity extends ListActivity {
         if (mIsBound) {
             // Detach our existing connection.
             unbindService(mConnection);
-            Toast.makeText(MainActivity.this, "Unbinding Service", Toast.LENGTH_LONG).show();
+            Toast.makeText(MainActivity.this, "Unbinding Service", Toast.LENGTH_SHORT).show();
             mIsBound = false;
         }
     }
@@ -164,24 +166,19 @@ public class MainActivity extends ListActivity {
                     wordList.clear();
                     adapter.notifyDataSetChanged();
                     //Do restart dongle sometimes
-                    /*if(++restartCount == RESTART_CYCLE) {
-                        //Create fresh queue of PID and start requests with reset
-                        msg = Message.obtain(null, TcpClientService.MSG_START_REQUESTS);
-                        msg.replyTo = mMessenger;
-                        try {
-                            mService.send(msg);
-                        } catch (RemoteException e) {
-                            e.printStackTrace();
-                        }
+                    if(++restartCount == RESTART_CYCLE) {
+                        doUnbindService();
+                        //set Timer for restarting service
+                        TimerTask restartTask = new RestartServiceTask();
+                        restartTimer.schedule(restartTask, RESTART_PERIOD);
                         restartCount = 0;
-                    }*/
+                    }
                     break;
                 case TcpClientService.MSG_STOP_REQUESTS:
                     Toast.makeText(getApplicationContext(), msg.obj.toString(), Toast.LENGTH_SHORT).show();
                     doUnbindService();
                     //set Timer for restarting service
                     TimerTask restartTask = new RestartServiceTask();
-                    Timer restartTimer = new Timer();
                     restartTimer.schedule(restartTask, RESTART_PERIOD);
                     break;
                 default:
