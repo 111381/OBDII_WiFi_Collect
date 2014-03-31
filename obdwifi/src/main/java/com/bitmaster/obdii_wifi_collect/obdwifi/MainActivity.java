@@ -39,7 +39,7 @@ public class MainActivity extends ListActivity {
     private Messenger mService = null;
     private GpsLocation gpsLocation = null;
     private static final int RESTART_CYCLE = 10;//restart dongle after writing lines
-    private static final long RESTART_PERIOD = 5*1000;//restart service after destroy self by msg
+    private static final long RESTART_PERIOD = 10*1000;//restart service after destroy self by msg
     private static int restartCount = 0;
     private Timer restartTimer = null;
 
@@ -166,13 +166,13 @@ public class MainActivity extends ListActivity {
                     wordList.clear();
                     adapter.notifyDataSetChanged();
                     //Do restart dongle sometimes
-                    if(++restartCount == RESTART_CYCLE) {
+                    /*if(++restartCount == RESTART_CYCLE) {
                         doUnbindService();
                         //set Timer for restarting service
                         TimerTask restartTask = new RestartServiceTask();
                         restartTimer.schedule(restartTask, RESTART_PERIOD);
                         restartCount = 0;
-                    }
+                    }*/
                     break;
                 case TcpClientService.MSG_STOP_REQUESTS:
                     Toast.makeText(getApplicationContext(), msg.obj.toString(), Toast.LENGTH_SHORT).show();

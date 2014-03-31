@@ -61,6 +61,13 @@ public class TcpClientService extends Service {
             tcpTask.cancel(true);//do interrupt finishing task
         }
     }
+    @Override
+    public boolean onUnbind(Intent arg0) {
+        if(tcpTask != null) {
+            tcpTask.cancel(true);//do interrupt finishing task
+        }
+        return false;//Return true if you would like to have the service's onRebind(Intent) method later called when new clients bind to it.
+    }
     /**
      * When binding to the service, we return an interface to our messenger
      * for sending messages to the service.
