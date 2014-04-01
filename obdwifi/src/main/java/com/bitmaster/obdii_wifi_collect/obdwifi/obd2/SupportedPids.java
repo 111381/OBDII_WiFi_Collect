@@ -30,9 +30,9 @@ public class SupportedPids {
         //if reading from file unsuccessful
         if(!readFromFile(this.INIT_FILE, true)) {
             //initCommands.add("ATZ"); //reset
-            initCommands.add("ATDP"); //display protocol
-            initCommands.add("ATSP3");//set ISO 9141-2 protocol
-            initCommands.add("ATE0 ");// echo off
+            //initCommands.add("ATDP"); //display protocol
+            //initCommands.add("ATSP3");//set ISO 9141-2 protocol
+            //initCommands.add("ATE0 ");// echo off
             initCommands.add("0100");//PIDs supported [01 - 20]
             initCommands.add("0120");//PIDs supported [21 - 40]
         }

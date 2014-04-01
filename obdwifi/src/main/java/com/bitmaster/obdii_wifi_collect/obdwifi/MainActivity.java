@@ -12,24 +12,27 @@ import android.os.Bundle;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.TcpClientService;
-import com.bitmaster.obdii_wifi_collect.obdwifi.io.WriteDown;
+import com.bitmaster.obdii_wifi_collect.obdwifi.io.TcpIntentService;
+import com.bitmaster.obdii_wifi_collect.obdwifi.io.WriteDownService;
 import com.bitmaster.obdii_wifi_collect.obdwifi.loc.GpsLocation;
+import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.SupportedPids;
 
-import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
 
-public class MainActivity extends ListActivity {
+public class MainActivity extends ListActivity implements ObdResultReceiver.Receiver {
 
     //private TcpClientService service = null;
     private ArrayAdapter<String> adapter = null;
@@ -43,18 +46,110 @@ public class MainActivity extends ListActivity {
     private static int restartCount = 0;
     private Timer restartTimer = null;
 
+    public ObdResultReceiver mReceiver;
+    private SupportedPids pids = null;
+    private boolean requestsEnabled = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        wordList = new ArrayList<String>();
-        adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, wordList);
+        this.wordList = new ArrayList<String>();
+        this.adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, wordList);
         this.setListAdapter(adapter);
 
         this.gpsLocation = new GpsLocation(this);
         this.restartTimer = new Timer();
+
+        this.mReceiver = new ObdResultReceiver(new Handler());
+        this.mReceiver.setReceiver(this);
     }
+
+    @Override
+    public void onReceiveResult(int resultCode, Bundle resultData) {
+
+        this.wordList.add(resultData.getString("ServiceTag"));
+        this.adapter.notifyDataSetChanged();
+
+        if(this.requestsEnabled) {
+            this.requestLogic();
+        }
+    }
+    public void onClick(View view) {
+
+        if(this.requestsEnabled) {
+            this.requestsEnabled = false;
+            return;
+        }
+        this.requestsEnabled = true;
+        //Create fresh queue of PID and start requests with reset
+        this.pids = new SupportedPids();
+        this.gpsLocation.requestLocation();
+
+        Intent mServiceIntent = new Intent(this, TcpIntentService.class);
+        mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.Request", "ATZ");
+        mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.receiverTag", mReceiver);
+        this.startService(mServiceIntent);
+
+        //bindToOBDII(view);
+    }
+    private void requestLogic() {
+
+        String pid;
+        // call recursively:
+        // First do init requests since response 'null'
+        if(!pids.isInitDone()) {
+            pid = pids.getNextInit();
+            if(pid == null) {
+                pids.setInitDone(true);
+            }
+        } else {
+            pid = pids.getNextPid();
+        }
+        // next request with next PID
+        if(pid == null) {
+            this.saveToFile();
+            pid = pids.getNextPid();
+        }
+        Intent mServiceIntent = new Intent(this, TcpIntentService.class);
+        mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.Request", pid);
+        mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.receiverTag", mReceiver);
+        this.startService(mServiceIntent);
+    }
+
+    private void saveToFile() {
+
+        Location loc = this.gpsLocation.getLocation();
+        String latitude = "0";
+        String longitude = "0";
+        String speed = "0";
+        if(loc != null){
+            latitude = Double.toString(loc.getLatitude());
+            longitude = Double.toString(loc.getLongitude());
+            speed = Double.toString(loc.getSpeed());
+        }
+        String line = "";
+        Iterator<String> it = this.wordList.iterator();
+        while(it.hasNext()) {
+            line += (it.next()).replace("\n", ",").replace("\r", ",");
+        }
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String currentDateandTime = sdf.format(new Date());
+        String csvLine = currentDateandTime + "," + line + "," + latitude + "," + longitude + "," + speed + ";\n";
+
+        Intent mServiceIntent = new Intent(this, WriteDownService.class);
+        mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.csvLine", csvLine);
+        this.startService(mServiceIntent);
+
+        this.gpsLocation.requestLocation();
+        //clear screen
+        this.wordList.clear();
+        this.adapter.notifyDataSetChanged();
+    }
+
+
+
 
     @Override
     protected void onResume() {
@@ -72,11 +167,6 @@ public class MainActivity extends ListActivity {
     protected void onDestroy() {
         super.onDestroy();
         this.doUnbindService();
-    }
-
-    public void onClick(View view) {
-
-        bindToOBDII(view);
     }
 
     public void bindToOBDII(View v) {
@@ -154,12 +244,12 @@ public class MainActivity extends ListActivity {
                     break;
                 case TcpClientService.MSG_WRITE_LIST_TO_FILE:
                     Location loc = gpsLocation.getLocation();
-                    try {
-                        new WriteDown(wordList, loc);
+                   /* try {
+                        new WriteDownService(wordList, loc);
                     } catch (IOException e) {
                         e.printStackTrace();
                         Toast.makeText(getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
-                    }
+                    }*/
                     //we do request location after initial OBD requests
                     gpsLocation.requestLocation();
                     //clear screen

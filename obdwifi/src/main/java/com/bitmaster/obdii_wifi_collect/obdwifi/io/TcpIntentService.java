@@ -2,7 +2,8 @@ package com.bitmaster.obdii_wifi_collect.obdwifi.io;
 
 import android.app.IntentService;
 import android.content.Intent;
-import android.util.Log;
+import android.os.Bundle;
+import android.os.ResultReceiver;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -17,11 +18,10 @@ import java.net.Socket;
  */
 public class TcpIntentService extends IntentService {
 
-    public static final int TCP_SERVER_PORT = 35000;
-    public static final String SERVER_IP_ADDRESS = "192.168.0.10";
-    public static final int SOCKET_CONN_TIMEOUT = 5000;
+    private static final int TCP_SERVER_PORT = 35000;
+    private static final String SERVER_IP_ADDRESS = "192.168.0.10";
+    private static final int SOCKET_CONN_TIMEOUT = 10*1000;
 
-    private Socket socket = null;
     /**
      * A constructor is required, and must call the super IntentService(String)
      * constructor with a name for the worker thread.
@@ -37,7 +37,38 @@ public class TcpIntentService extends IntentService {
      */
     @Override
     protected void onHandleIntent(Intent intent) {
-        // Normally we would do some work here, like download a file.
+
+        synchronized (this) {
+            ResultReceiver rec = intent.getParcelableExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.receiverTag");
+            String outMsg = intent.getStringExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.Request");
+            Bundle b= new Bundle();
+            Socket socket = new Socket();
+            try {
+                InetAddress ip = InetAddress.getByName(SERVER_IP_ADDRESS);
+                socket.connect(new InetSocketAddress(ip, TCP_SERVER_PORT), SOCKET_CONN_TIMEOUT);
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+                //send output msg
+                out.write(outMsg + "\r");
+                out.flush();
+                //accept server response
+                int character = 0;
+                String inMsg = "";
+                int bytes = 0; // if end character not found
+                //TODO: timeout for read lock
+                while (((character = in.read()) != 62) && (bytes < 30)) { // EOL == '>'
+                    inMsg = inMsg + Character.toString((char) character);
+                    bytes++;
+                }
+                socket.close();
+                b.putString("ServiceTag", inMsg);
+                rec.send(0, b);
+            } catch (Exception e) {
+                b.putString("ServiceTag",e.getLocalizedMessage());
+                rec.send(0, b);
+            }
+        }
+        /*// Normally we would do some work here, like download a file.
         // For our sample, we just sleep for 5 seconds.
         long endTime = System.currentTimeMillis() + 5*1000;
         while (System.currentTimeMillis() < endTime) {
@@ -47,35 +78,6 @@ public class TcpIntentService extends IntentService {
                 } catch (Exception e) {
                 }
             }
-        }
-        String outMsg = " ";
-        try {
-            InetAddress ip = InetAddress.getByName(SERVER_IP_ADDRESS);
-            this.socket = new Socket();
-            this.socket.connect(new InetSocketAddress(ip, TCP_SERVER_PORT), SOCKET_CONN_TIMEOUT);
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            //send output msg
-            out.write(outMsg + "\r");
-            out.flush();
-            Log.i("TcpClient", "sent: " + outMsg);
-            //accept server response
-            int character = 0;
-            String inMsg = "";
-            int bytes = 0; // if end character not found  && if task is not cancelled
-            while(((character = in.read()) != 62) && (bytes < 30)) { // EOL == '>'
-                inMsg = inMsg + Character.toString((char) character);
-                bytes++;
-            }
-            Log.i("TcpClient", "received: " + inMsg);
-            socket.close();
-
-            return ;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-
-            return ;
-        }
+        }*/
     }
 }

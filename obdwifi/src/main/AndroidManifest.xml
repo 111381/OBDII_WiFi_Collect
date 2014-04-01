@@ -25,6 +25,12 @@
             android:label="@string/service_name"
             >
         </service>
+        <service
+            android:name="com.bitmaster.obdii_wifi_collect.obdwifi.io.TcpIntentService"
+            android:exported="false"/>
+        <service
+            android:name="com.bitmaster.obdii_wifi_collect.obdwifi.io.WriteDownService"
+            android:exported="false"/>
 
     </application>
 
