@@ -48,7 +48,7 @@ public class TcpIntentService extends IntentService {
                 }
             }
         }
-        String outMsg = "";
+        String outMsg = " ";
         try {
             InetAddress ip = InetAddress.getByName(SERVER_IP_ADDRESS);
             this.socket = new Socket();
