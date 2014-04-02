@@ -14,6 +14,7 @@ import android.widget.ArrayAdapter;
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.TcpIntentService;
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.WriteDownService;
 import com.bitmaster.obdii_wifi_collect.obdwifi.loc.GpsLocation;
+import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.FilterLogic;
 import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.SupportedPids;
 
 import java.text.SimpleDateFormat;
@@ -30,8 +31,6 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
     private ArrayAdapter<String> adapter = null;
     private List<String> wordList = null;
     private GpsLocation gpsLocation = null;
-    private static final long RESTART_PERIOD = 10*1000;//restart service after destroy self by msg
-    private Timer restartTimer = null;
 
     public ObdResultReceiver mReceiver;
     private SupportedPids pids = null;
@@ -50,7 +49,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         this.setListAdapter(adapter);
 
         this.gpsLocation = new GpsLocation(this);
-        this.restartTimer = new Timer();
+        this.gpsLocation.requestLocation();
 
         this.mReceiver = new ObdResultReceiver(new Handler());
         this.mReceiver.setReceiver(this);
@@ -63,7 +62,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         wifiLock.acquire();
         WifiInfo inf = wifi.getConnectionInfo();
         if(!inf.getSSID().equalsIgnoreCase("WiFi_OBDII")){
-            wifi.enableNetwork(4, true);
+            wifi.enableNetwork(4, true);                   //ID!!!!!
         }
     }
 
@@ -73,15 +72,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             this.requestsEnabled = false;
             return;
         }
-        this.requestsEnabled = true;
-        //Create fresh queue of PID and start requests with reset
-        this.pids = new SupportedPids();
-        this.gpsLocation.requestLocation();
-
-        Intent mServiceIntent = new Intent(this, TcpIntentService.class);
-        mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.Request", "ATZ");
-        mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.receiverTag", mReceiver);
-        this.startService(mServiceIntent);
+        this.startRequests();
     }
 
     @Override
@@ -91,8 +82,14 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             this.wordList.add("Wifi is not enabled");
             this.requestsEnabled = false;
         }
-        this.wordList.add(resultData.getString("ServiceTag"));
+        String response = resultData.getString("ServiceTag");
+        this.wordList.add(response);
         this.adapter.notifyDataSetChanged();
+        //Stops requests by existing fault, restarts them by timer task
+        FilterLogic filter = new FilterLogic(this);
+        if(filter.isResponseFaulty(response)){
+            this.requestsEnabled = false;
+        }
 
         if(this.requestsEnabled) {
             this.requestLogic();
@@ -117,13 +114,32 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             this.saveToFile();
             pid = pids.getNextPid();
         }
+        this.requestToTcpService(pid);
+    }
+
+    private void requestToTcpService(String request) {
+
         Intent mServiceIntent = new Intent(this, TcpIntentService.class);
-        mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.Request", pid);
+        mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.Request", request);
         mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.receiverTag", mReceiver);
         this.startService(mServiceIntent);
     }
 
-    private void saveToFile() {
+    public void startRequests() {
+
+        runOnUiThread(new Runnable(){
+            @Override
+            public void run() {
+                requestsEnabled = true;
+                //Create fresh queue of PID and start requests with reset
+                pids = new SupportedPids();
+                gpsLocation.requestLocation();
+                requestToTcpService("ATZ");
+            }
+        });
+    }
+
+    public void saveToFile() {
 
         Location loc = this.gpsLocation.getLocation();
         String latitude = "0";
@@ -167,22 +183,8 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
     protected void onDestroy() {
         super.onDestroy();
         this.wifiLock.release();
+        this.gpsLocation = null;
     }
-    /**
-     * Automatic restart service by timer after MSG_STOP_REQUESTS message from service
-
-    class RestartServiceTask extends TimerTask {
-        public void run() {
-            runOnUiThread(new Runnable(){
-
-                @Override
-                public void run() {
-                    doBindService();
-                }});
-        }
-    }
-     */
-
 
 
    /* @Override

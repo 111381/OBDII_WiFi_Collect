@@ -20,17 +20,17 @@ public class GpsLocation {
 
     public GpsLocation(Context context) {
         /********** get Gps location service LocationManager object ***********/
-        locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        this.locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
     }
 
     public Location getLocation() {
-        if(!locationManager.isProviderEnabled(PROVIDER)){
+        if(!this.locationManager.isProviderEnabled(PROVIDER)){
             return null;
         }
         return this.locationManager.getLastKnownLocation(PROVIDER);
     }
     public boolean getLocationUpdated() {
-        if(!locationManager.isProviderEnabled(PROVIDER)){
+        if(!this.locationManager.isProviderEnabled(PROVIDER)){
             return false;
         }
         return this.locationUpdated;
@@ -40,11 +40,11 @@ public class GpsLocation {
 
         this.locationUpdated = false;
 
-        if(!locationManager.isProviderEnabled(PROVIDER)){
+        if(!this.locationManager.isProviderEnabled(PROVIDER)){
             return;
         }
 
-        locationManager.requestSingleUpdate(PROVIDER, new LocationListener(){
+        this.locationManager.requestSingleUpdate(PROVIDER, new LocationListener(){
 
             @Override
             public void onLocationChanged(Location loc) {
