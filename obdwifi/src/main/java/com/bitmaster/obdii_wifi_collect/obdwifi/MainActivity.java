@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 
 
 public class MainActivity extends ListActivity implements ObdResultReceiver.Receiver {
@@ -164,7 +162,12 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         this.startService(mServiceIntent);
 
         this.gpsLocation.requestLocation();
-        //clear screen
+
+        this.clearList();
+    }
+
+    public void clearList() {
+
         this.wordList.clear();
         this.adapter.notifyDataSetChanged();
     }

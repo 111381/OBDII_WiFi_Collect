@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 
+import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.FilterLogic;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.InputStreamReader;
@@ -20,7 +22,7 @@ public class TcpIntentService extends IntentService {
 
     private static final int TCP_SERVER_PORT = 35000;
     private static final String SERVER_IP_ADDRESS = "192.168.0.10";
-    private static final int SOCKET_CONN_TIMEOUT = 10*1000;
+    private static final int SOCKET_CONN_TIMEOUT = 30*1000;
 
     /**
      * A constructor is required, and must call the super IntentService(String)
@@ -64,7 +66,7 @@ public class TcpIntentService extends IntentService {
                 b.putString("ServiceTag", inMsg);
                 rec.send(0, b);
             } catch (Exception e) {
-                b.putString("ServiceTag",e.getLocalizedMessage());
+                b.putString("ServiceTag", FilterLogic.TCP_ERROR);
                 rec.send(0, b);
             }
         }

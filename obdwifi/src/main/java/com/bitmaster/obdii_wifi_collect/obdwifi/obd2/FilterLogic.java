@@ -14,6 +14,7 @@ public class FilterLogic {
 
     private static final String NO_DATA = "NO DATA";
     private static final String ERROR = "ERROR";
+    public static final String TCP_ERROR = "TcpErr";
 
     private MainActivity main = null;
 
@@ -27,18 +28,20 @@ public class FilterLogic {
         if(response.contains(NO_DATA)){
             Timer timer = new Timer();
             TimerTask restartRequestsTask = new RestartRequestsTask();
-            timer.schedule(restartRequestsTask, 1000);
+            timer.schedule(restartRequestsTask, 3000);
 
-            main.saveToFile();
+            //main.saveToFile();
+            main.clearList();
             return true;
         }
 
-        if(response.contains(ERROR)){
+        if(response.contains(ERROR) || response.contains(TCP_ERROR)){
             Timer timer = new Timer();
             TimerTask restartRequestsTask = new RestartRequestsTask();
-            timer.schedule(restartRequestsTask, 10000);
+            timer.schedule(restartRequestsTask, 30000);
 
-            main.saveToFile();
+            //main.saveToFile();
+            main.clearList();
             return true;
         }
 
