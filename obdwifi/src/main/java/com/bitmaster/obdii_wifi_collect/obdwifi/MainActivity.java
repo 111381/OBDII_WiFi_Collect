@@ -37,6 +37,10 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
     private WifiManager wifi = null;
     private WifiManager.WifiLock wifiLock = null;
 
+    public static int TCP_SERVER_PORT = 35000;
+    public static String SERVER_IP_ADDRESS = "192.168.0.10";
+    public static int SOCKET_CONN_TIMEOUT = 30*1000;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,12 +59,13 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         //SSID-WiFi_OBDII
         //BSSID-00:0E:C6:9F:0D:24
         //id-4
+        //IP-192.168.1.10
         this.wifi = (WifiManager)this.getSystemService(Context.WIFI_SERVICE);
         this.wifiLock = wifi.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "HighPerf wifi lock");
         wifiLock.acquire();
         WifiInfo inf = wifi.getConnectionInfo();
-        if(!inf.getSSID().equalsIgnoreCase("WiFi_OBDII")){
-            wifi.enableNetwork(4, true);                   //ID!!!!!
+        if(inf.getSSID().equalsIgnoreCase("V-LINK")){
+            SERVER_IP_ADDRESS = "192.168.0.150";
         }
     }
 
@@ -76,10 +81,6 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
     @Override
     public void onReceiveResult(int resultCode, Bundle resultData) {
 
-        if(!wifi.isWifiEnabled()){ //TODO reenabling
-            this.wordList.add("Wifi is not enabled");
-            this.requestsEnabled = false;
-        }
         String response = resultData.getString("ServiceTag");
         this.wordList.add(response);
         this.adapter.notifyDataSetChanged();
@@ -128,6 +129,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         runOnUiThread(new Runnable(){
             @Override
             public void run() {
+                clearList();
                 requestsEnabled = true;
                 //Create fresh queue of PID and start requests with reset
                 pids = new SupportedPids();
@@ -166,7 +168,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         this.clearList();
     }
 
-    public void clearList() {
+    private void clearList() {
 
         this.wordList.clear();
         this.adapter.notifyDataSetChanged();

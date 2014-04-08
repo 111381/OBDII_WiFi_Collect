@@ -31,7 +31,6 @@ public class FilterLogic {
             timer.schedule(restartRequestsTask, 3000);
 
             //main.saveToFile();
-            main.clearList();
             return true;
         }
 
@@ -41,7 +40,6 @@ public class FilterLogic {
             timer.schedule(restartRequestsTask, 30000);
 
             //main.saveToFile();
-            main.clearList();
             return true;
         }
 

@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 
+import com.bitmaster.obdii_wifi_collect.obdwifi.MainActivity;
 import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.FilterLogic;
 
 import java.io.BufferedReader;
@@ -19,11 +20,6 @@ import java.net.Socket;
  * Created by uhh on 3/31/14.
  */
 public class TcpIntentService extends IntentService {
-
-    private static final int TCP_SERVER_PORT = 35000;
-    private static final String SERVER_IP_ADDRESS = "192.168.0.10";
-    private static final int SOCKET_CONN_TIMEOUT = 30*1000;
-
     /**
      * A constructor is required, and must call the super IntentService(String)
      * constructor with a name for the worker thread.
@@ -46,8 +42,8 @@ public class TcpIntentService extends IntentService {
             Bundle b= new Bundle();
             Socket socket = new Socket();
             try {
-                InetAddress ip = InetAddress.getByName(SERVER_IP_ADDRESS);
-                socket.connect(new InetSocketAddress(ip, TCP_SERVER_PORT), SOCKET_CONN_TIMEOUT);
+                InetAddress ip = InetAddress.getByName(MainActivity.SERVER_IP_ADDRESS);
+                socket.connect(new InetSocketAddress(ip, MainActivity.TCP_SERVER_PORT), MainActivity.SOCKET_CONN_TIMEOUT);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
                 //send output msg
