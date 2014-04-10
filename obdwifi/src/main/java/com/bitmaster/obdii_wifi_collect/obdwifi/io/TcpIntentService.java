@@ -4,6 +4,7 @@ import android.app.IntentService;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.ResultReceiver;
+import android.util.Log;
 
 import com.bitmaster.obdii_wifi_collect.obdwifi.MainActivity;
 import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.FilterLogic;
@@ -54,10 +55,12 @@ public class TcpIntentService extends IntentService {
                 String inMsg = "";
                 int bytes = 0; // if end character not found
                 //TODO: timeout for read lock
-                while (((character = in.read()) != 62) && (bytes < 30)) { // EOL == '>'
+                while (((character = in.read()) != 62)) { // EOL == '>'
                     inMsg = inMsg + Character.toString((char) character);
                     bytes++;
+                    Log.i("TCP", Character.toString((char) character));
                 }
+                Log.i("TCP", ">");
                 socket.close();
                 b.putString("ServiceTag", inMsg);
                 rec.send(0, b);

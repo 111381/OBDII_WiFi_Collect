@@ -59,7 +59,11 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         //SSID-WiFi_OBDII
         //BSSID-00:0E:C6:9F:0D:24
         //id-4
-        //IP-192.168.1.10
+        //IP-192.168.1.10 - channel:6
+
+        //SSID V-LINK
+        //BSSID-AC:CF:23:21:E2:59
+        //IP-192.168.1.150 - channel:1
         this.wifi = (WifiManager)this.getSystemService(Context.WIFI_SERVICE);
         this.wifiLock = wifi.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "HighPerf wifi lock");
         wifiLock.acquire();
@@ -91,11 +95,11 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         }
 
         if(this.requestsEnabled) {
-            this.requestLogic();
+            this.nextRequestFromList();
         }
     }
 
-    private void requestLogic() {
+    public void nextRequestFromList() {
 
         String pid;
         // call recursively:
@@ -133,6 +137,9 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                 requestsEnabled = true;
                 //Create fresh queue of PID and start requests with reset
                 pids = new SupportedPids();
+                if(gpsLocation == null){
+                    return;
+                }
                 gpsLocation.requestLocation();
                 requestToTcpService(request);
             }

@@ -15,6 +15,7 @@ public class FilterLogic {
     private static final String NO_DATA = "NO DATA";
     private static final String ERROR = "ERROR";
     public static final String TCP_ERROR = "TcpErr";
+    private static final String BUS_INIT = "BUS INIT";
 
     private MainActivity main = null;
 
@@ -42,6 +43,12 @@ public class FilterLogic {
             //main.saveToFile();
             return true;
         }
+        //check after ERROR
+        if(response.contains(BUS_INIT)){
+            Timer timer = new Timer();
+            TimerTask continueRequestTask = new ContinueRequestTask();
+            timer.schedule(continueRequestTask, 3000);
+        }
 
         return false;
     }
@@ -50,5 +57,11 @@ public class FilterLogic {
         public void run() {
             main.startRequests("ATWS");
         }//warm reset, without LED test
+    }
+    //Continue requests
+    private class ContinueRequestTask extends TimerTask {
+        public void run() {
+            main.nextRequestFromList();
+        }
     }
 }

@@ -30,11 +30,11 @@ public class SupportedPids {
         //if reading from file unsuccessful
         if(!readFromFile(this.INIT_FILE, true)) {
             //initCommands.add("ATSPA3");//set ISO 9141-2 protocol, optional auto
-            initCommands.add("ATTPA3");//try ISO 9141-2 protocol, optional auto
+            initCommands.add("ATTP3");//try ISO 9141-2 protocol, optional auto
             //initCommands.add("ATE0 ");// echo off
         }
         if(!readFromFile(this.PID_FILE, false)) {
-            /*commands.add("0101");//Monitor status since DTCs cleared. (Includes malfunction indicator lamp (MIL) status and number of DTCs.)
+            commands.add("0101");//Monitor status since DTCs cleared. (Includes malfunction indicator lamp (MIL) status and number of DTCs.)
             commands.add("0103");//Fuel system status
             commands.add("0104");//Calculated engine load value
             commands.add("0105");//Engine coolant temperature
@@ -51,8 +51,16 @@ public class SupportedPids {
             commands.add("0115");//Bank 1, Sensor 2: Oxygen sensor voltage, Short term fuel trim
             commands.add("011C");//OBD standards this vehicle conforms to
             commands.add("0121");//Distance traveled with malfunction indicator lamp (MIL) on
-            */
-            commands.add("ATMA");//monitor all
+
+            commands.add("0100");
+            commands.add("0120");
+            commands.add("0140");
+            commands.add("0160");
+            commands.add("0180");
+            commands.add("01A0");
+            commands.add("01C0");
+
+            //commands.add("ATMA");//monitor all
         }
 
         it = commands.listIterator(0);
