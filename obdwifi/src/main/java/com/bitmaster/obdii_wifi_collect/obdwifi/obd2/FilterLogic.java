@@ -48,7 +48,7 @@ public class FilterLogic {
 
     private class RestartRequestsTask extends TimerTask {
         public void run() {
-            main.startRequests();
-        }
+            main.startRequests("ATWS");
+        }//warm reset, without LED test
     }
 }

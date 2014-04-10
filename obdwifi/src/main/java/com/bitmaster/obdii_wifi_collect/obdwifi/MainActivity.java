@@ -75,7 +75,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             this.requestsEnabled = false;
             return;
         }
-        this.startRequests();
+        this.startRequests("ATWS");//warm reset, without LED test
     }
 
     @Override
@@ -124,7 +124,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         this.startService(mServiceIntent);
     }
 
-    public void startRequests() {
+    public void startRequests(final String request) {
 
         runOnUiThread(new Runnable(){
             @Override
@@ -134,7 +134,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                 //Create fresh queue of PID and start requests with reset
                 pids = new SupportedPids();
                 gpsLocation.requestLocation();
-                requestToTcpService("ATZ");
+                requestToTcpService(request);
             }
         });
     }
