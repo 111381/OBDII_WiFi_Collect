@@ -15,7 +15,7 @@ public class FilterLogic {
     private static final String NO_DATA = "NO DATA";
     private static final String ERROR = "ERROR";
     public static final String TCP_ERROR = "TcpErr";
-    private static final String BUS_INIT = "ATTP";
+    private static final String ATTP = "ATTP";
 
     private MainActivity main = null;
 
@@ -44,7 +44,7 @@ public class FilterLogic {
             return true;
         }
 
-        if(response.contains(BUS_INIT)){
+        if(response.contains(ATTP)){
             Timer timer = new Timer();
             TimerTask continueRequestTask = new ContinueRequestTask();
             timer.schedule(continueRequestTask, 3000);

@@ -101,31 +101,29 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
 
     public void nextRequestFromList() {
 
-        String pid;
-        // call recursively:
-        // First do init requests since response 'null'
-        if(!pids.isInitDone()) {
-            pid = pids.getNextInit();
-            if(pid == null) {
-                pids.setInitDone(true);
+        runOnUiThread(new Runnable(){
+            @Override
+            public void run() {
+                requestsEnabled = true;
+                String pid;
+                // call recursively:
+                // First do init requests since response 'null'
+                if(!pids.isInitDone()) {
+                    pid = pids.getNextInit();
+                    if(pid == null) {
+                        pids.setInitDone(true);
+                    }
+                } else {
+                    pid = pids.getNextPid();
+                }
+                // next request with next PID
+                if(pid == null) {
+                    saveToFile();
+                    pid = pids.getNextPid();
+                }
+                requestToTcpService(pid);
             }
-        } else {
-            pid = pids.getNextPid();
-        }
-        // next request with next PID
-        if(pid == null) {
-            this.saveToFile();
-            pid = pids.getNextPid();
-        }
-        this.requestToTcpService(pid);
-    }
-
-    private void requestToTcpService(String request) {
-
-        Intent mServiceIntent = new Intent(this, TcpIntentService.class);
-        mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.Request", request);
-        mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.receiverTag", mReceiver);
-        this.startService(mServiceIntent);
+        });
     }
 
     public void startRequests(final String request) {
@@ -144,6 +142,14 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                 requestToTcpService(request);
             }
         });
+    }
+
+    private void requestToTcpService(String request) {
+
+        Intent mServiceIntent = new Intent(this, TcpIntentService.class);
+        mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.Request", request);
+        mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.receiverTag", mReceiver);
+        this.startService(mServiceIntent);
     }
 
     public void saveToFile() {
