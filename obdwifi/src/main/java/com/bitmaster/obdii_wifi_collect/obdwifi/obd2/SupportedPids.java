@@ -29,9 +29,9 @@ public class SupportedPids {
 
         //if reading from file unsuccessful
         if(!readFromFile(this.INIT_FILE, true)) {
-            //initCommands.add("ATSPA3");//set ISO 9141-2 protocol, optional auto
+            initCommands.add("ATIGN");//ignition
             initCommands.add("ATTP3");//try ISO 9141-2 protocol, optional auto
-            //initCommands.add("ATE0 ");// echo off
+            initCommands.add("ATDP");// display protocol
         }
         if(!readFromFile(this.PID_FILE, false)) {
             commands.add("0101");//Monitor status since DTCs cleared. (Includes malfunction indicator lamp (MIL) status and number of DTCs.)
