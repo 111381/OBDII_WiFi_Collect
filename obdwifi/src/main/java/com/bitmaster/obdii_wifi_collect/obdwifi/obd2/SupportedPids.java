@@ -29,12 +29,16 @@ public class SupportedPids {
 
         //if reading from file unsuccessful
         if(!readFromFile(this.INIT_FILE, true)) {
-            initCommands.add("ATIGN");//ignition
-            initCommands.add("ATTP3");//try ISO 9141-2 protocol, optional auto
-            initCommands.add("ATDP");// display protocol
+            initCommands.add("ATSP6");//use CAN 11-bit MsgID, 500,000 baud
+            initCommands.add("ATH1");// headers on
+            initCommands.add("ATL0");//No CrLf
+            initCommands.add("ATS0");//Suppress Spaces
+            initCommands.add("ATE0");//Echo Off
+            //initCommands.add("ATCAF0");//disable can autoformat
+            //STSBR 500000 ; sets Baud Rate to 500,000 baud
         }
         if(!readFromFile(this.PID_FILE, false)) {
-            commands.add("0101");//Monitor status since DTCs cleared. (Includes malfunction indicator lamp (MIL) status and number of DTCs.)
+            /*commands.add("0101");//Monitor status since DTCs cleared. (Includes malfunction indicator lamp (MIL) status and number of DTCs.)
             commands.add("0103");//Fuel system status
             commands.add("0104");//Calculated engine load value
             commands.add("0105");//Engine coolant temperature
@@ -58,9 +62,9 @@ public class SupportedPids {
             commands.add("0160");
             commands.add("0180");
             commands.add("01A0");
-            commands.add("01C0");
+            commands.add("01C0");*/
 
-            //commands.add("ATMA");//monitor all
+            commands.add("ATMA");//monitor all
         }
 
         it = commands.listIterator(0);
