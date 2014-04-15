@@ -16,6 +16,7 @@ public class FilterLogic {
     private static final String ERROR = "ERROR";
     public static final String TCP_ERROR = "TcpErr";
     private static final String ATTP = "ATTP";
+    private static final String BUFFER = "BUFFER FULL";
 
     private MainActivity main = null;
 
@@ -26,7 +27,7 @@ public class FilterLogic {
 
     public boolean isResponseFaulty(String response) {
 
-        if(response.contains(NO_DATA)){
+        if(response.contains(NO_DATA) || response.contains(BUFFER)){
             Timer timer = new Timer();
             TimerTask restartRequestsTask = new RestartRequestsTask();
             timer.schedule(restartRequestsTask, 3000);
