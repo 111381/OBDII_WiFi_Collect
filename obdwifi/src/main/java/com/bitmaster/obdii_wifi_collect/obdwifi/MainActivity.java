@@ -79,9 +79,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             this.requestsEnabled = false;
             return;
         }
-        //this.startRequests("ATWS");//warm reset, without LED test
-        //TODO:
-        this.startRequests("ATBRD 08");//500 kbaud/sec
+        this.startRequests("ATWS");//warm reset, without LED test
     }
 
     @Override
@@ -90,9 +88,6 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         String response = resultData.getString("ServiceTag");
         this.wordList.add(response);
         this.adapter.notifyDataSetChanged();
-
-        //TODO
-        /*
         //Stops requests by existing fault, restarts them by timer task
         FilterLogic filter = new FilterLogic(this);
         if(filter.isResponseFaulty(response)){
@@ -101,7 +96,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
 
         if(this.requestsEnabled) {
             this.nextRequestFromList();
-        }*/
+        }
     }
 
     public void nextRequestFromList() {
