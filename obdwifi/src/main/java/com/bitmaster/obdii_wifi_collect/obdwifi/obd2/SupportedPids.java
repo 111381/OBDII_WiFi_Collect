@@ -29,12 +29,12 @@ public class SupportedPids {
 
         //if reading from file unsuccessful
         if(!readFromFile(this.INIT_FILE, true)) {
-            initCommands.add("ATSP6");//use CAN 11-bit MsgID, 500,000 baud
+            initCommands.add("ATTP6");//use CAN 11-bit MsgID, 500,000 baud
             initCommands.add("ATH1");// headers on
             initCommands.add("ATL0");//No CrLf
             initCommands.add("ATS0");//Suppress Spaces
             initCommands.add("ATE0");//Echo Off
-            initCommands.add("ATMA");//monitor all
+            //initCommands.add("ATMA");//monitor all
             //initCommands.add("ATCAF0");//disable can autoformat
             //STSBR 500000 ; sets Baud Rate to 500,000 baud
         }

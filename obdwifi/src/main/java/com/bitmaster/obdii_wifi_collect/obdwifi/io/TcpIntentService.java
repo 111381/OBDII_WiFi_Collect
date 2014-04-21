@@ -61,6 +61,16 @@ public class TcpIntentService extends IntentService {
                     Log.i("TCP", Integer.toString(character));
                 }
                 Log.i("TCP", ">");
+                /////
+                out.write("\r");
+                inMsg = inMsg + "\n kas on OK?:\n";
+                while (((character = in.read()) != 62) && bytes < 512) { // EOL == '>'
+                    inMsg = inMsg + Character.toString((char) character);
+                    bytes++;
+                    Log.i("TCP", Integer.toString(character));
+                }
+                Log.i("TCP", ">");
+                /////
                 socket.close();
                 b.putString("ServiceTag", inMsg);
                 rec.send(0, b);
