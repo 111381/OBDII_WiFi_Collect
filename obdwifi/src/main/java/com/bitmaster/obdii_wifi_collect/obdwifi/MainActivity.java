@@ -75,10 +75,10 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
 
     public void onClick(View view) {
 
-        if(this.requestsEnabled) {
+        /*if(this.requestsEnabled) {
             this.requestsEnabled = false;
             return;
-        }
+        }*/
         this.startRequests("ATWS");//warm reset, without LED test
     }
 
