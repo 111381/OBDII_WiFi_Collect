@@ -51,21 +51,16 @@ public class TcpIntentService extends IntentService {
                 out.write(outMsg + "\r");
                 out.flush();
                 //accept server response
-                Integer character;
+                int character = 0;
                 String inMsg = "";
                 int bytes = 0; // if end character not found
                 //TODO: timeout for read lock
                 while (((character = in.read()) != 62) && bytes < 512) { // EOL == '>'
-                    if(character == null){
-                        character = 0;
-                    }
-                    inMsg = inMsg + character.toString();
+                    inMsg = inMsg + Character.toString((char) character);
                     bytes++;
                     Log.i("TCP", Integer.toString(character));
                 }
-                //out.write("X\r");
-                Log.i("TCP", ">"+Integer.toString(bytes));
-                Log.i("TCP", inMsg);
+                Log.i("TCP", ">");
                 socket.close();
                 b.putString("ServiceTag", inMsg);
                 rec.send(0, b);

@@ -27,7 +27,8 @@ public class FilterLogic {
 
     public boolean isResponseFaulty(String response) {
 
-        if(response.contains(NO_DATA) || response.contains(BUFFER)){
+        //if(response.contains(NO_DATA) || response.contains(BUFFER)){
+        if(response.contains(BUFFER)){
             Timer timer = new Timer();
             TimerTask restartRequestsTask = new RestartRequestsTask();
             timer.schedule(restartRequestsTask, 3000);
