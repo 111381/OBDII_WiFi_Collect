@@ -53,14 +53,16 @@ public class TcpIntentService extends IntentService {
                 //accept server response
                 int character = 0;
                 String inMsg = "";
-                int bytes = 0; // if end character not found
+                long bytes = 0; // if end character not found
+                long nanoTime =  System.nanoTime();
                 //TODO: timeout for read lock
                 while (((character = in.read()) != 62) && bytes < 512) { // EOL == '>'
                     inMsg = inMsg + Character.toString((char) character);
                     bytes++;
-                    Log.i("TCP", Integer.toString(character));
+                    //Log.i("TCP", Integer.toString(character));
                 }
-                Log.i("TCP", ">");
+                Log.i("TCP", "Nanos: " + Long.toString(System.nanoTime() - nanoTime));
+                Log.i("TCP", "Bauds" + Long.toString(bytes*8));//RS232 data rate in bits per second is equal to the symbol rate in bauds
                 socket.close();
                 b.putString("ServiceTag", inMsg);
                 rec.send(0, b);

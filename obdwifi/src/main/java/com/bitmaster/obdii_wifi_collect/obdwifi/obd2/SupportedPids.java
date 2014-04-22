@@ -34,7 +34,7 @@ public class SupportedPids {
             initCommands.add("ATL0");//No CrLf
             initCommands.add("ATS0");//Suppress Spaces
             initCommands.add("ATE0");//Echo Off
-            //initCommands.add("ATMA");//monitor all
+            initCommands.add("ATMA");//monitor all
             //initCommands.add("ATCAF0");//disable can autoformat
             //STSBR 500000 ; sets Baud Rate to 500,000 baud
         }
