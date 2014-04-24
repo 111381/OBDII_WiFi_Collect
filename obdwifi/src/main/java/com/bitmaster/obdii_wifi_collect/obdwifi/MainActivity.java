@@ -248,8 +248,8 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                 this.textView.setText("CAN monitoring terminated");
                 return true;
             case R.id.action_stopObd:
-                this.bockRequests = true;
-                this.textView.setText("OBDII requests blocked");
+                this.requestsEnabled = false;
+                this.textView.setText("OBDII requests disabled");
                 return true;
             case R.id.action_save:
                 this.textView.setText("Saving to file");
