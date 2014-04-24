@@ -8,8 +8,11 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.TextView;
 
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.TcpIntentService;
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.WriteDownService;
@@ -28,11 +31,13 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
 
     private ArrayAdapter<String> adapter = null;
     private List<String> wordList = null;
+    private TextView textView = null;
     private GpsLocation gpsLocation = null;
 
     public ObdResultReceiver mReceiver;
     private SupportedPids pids = null;
     private boolean requestsEnabled = false;
+    private boolean bockRequests = true; //first priority block all futher OBDII responses
 
     private WifiManager wifi = null;
     private WifiManager.WifiLock wifiLock = null;
@@ -71,15 +76,8 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         if(inf.getSSID().equalsIgnoreCase("V-LINK")){
             SERVER_IP_ADDRESS = "192.168.0.150";
         }
-    }
-
-    public void onClick(View view) {
-
-        /*if(this.requestsEnabled) {
-            this.requestsEnabled = false;
-            return;
-        }*/
-        this.startRequests("ATWS");//warm reset, without LED test
+        this.textView = (TextView) findViewById(R.id.text_view);
+        this.textView.setText(inf.getSSID());
     }
 
     @Override
@@ -88,6 +86,9 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         String response = resultData.getString("ServiceTag");
         this.wordList.add(response);
         this.adapter.notifyDataSetChanged();
+        if(this.bockRequests) { //Monitoring state
+            return;
+        }
         //Stops requests by existing fault, restarts them by timer task
         FilterLogic filter = new FilterLogic(this);
         if(filter.isResponseFaulty(response)){
@@ -205,7 +206,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
     }
 
 
-   /* @Override
+   @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -218,10 +219,41 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            return true;
+        // Handle item selection
+        switch (item.getItemId()) {
+            case R.id.action_startCan:
+                this.bockRequests = true;
+                this.requestToTcpService("ATMA");
+                this.textView.setText("CAN monitoring in progress");
+                return true;
+            case R.id.action_startObd:
+                this.bockRequests = false;
+                this.startRequests("ATWS");//warm reset, without LED test
+                this.textView.setText("OBDII request sequence");
+                return true;
+            case R.id.action_stopCan:
+                this.requestToTcpService("");
+                this.textView.setText("CAN monitoring terminated");
+                return true;
+            case R.id.action_stopObd:
+                this.bockRequests = true;
+                this.textView.setText("OBDII requests blocked");
+                return true;
+            case R.id.action_save:
+                this.textView.setText("Saving to file");
+                this.saveToFile();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
         }
-        return super.onOptionsItemSelected(item);
+    }
+
+    /*public void onClick(View view) {
+
+        if(this.requestsEnabled) {
+            this.requestsEnabled = false;
+            return;
+        }
+        this.startRequests("ATWS");//warm reset, without LED test
     }*/
 }

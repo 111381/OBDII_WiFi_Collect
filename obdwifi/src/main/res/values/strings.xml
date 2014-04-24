@@ -2,10 +2,12 @@
 <resources>
 
     <string name="app_name">0BDII_WiFi_Collect</string>
-    <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
     <string name="service_name">TcpClientService</string>
-
-    <string name="start_button">Start OBDII requests</string>
+    <string name="action_startOBDII">Start OBDII requests</string>
+    <string name="action_stopOBDII">Stop OBDII requests</string>
+    <string name="action_startCAN">Start CAN monitoring</string>
+    <string name="action_stopCAN">Stop CAN monitoring</string>
+    <string name="action_save">Save to file</string>
+    <!--<string name="start_button">Start OBDII requests</string>-->
 
 </resources>

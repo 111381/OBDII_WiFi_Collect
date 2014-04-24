@@ -13,19 +13,19 @@ tools:ignore="MergeRootFrame" />
     android:layout_height="fill_parent"
     android:orientation="vertical" >
 
-<!--    <TextView
-        android:text="@string/hello_world"
+    <TextView
+        android:id="@+id/text_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
--->
-    <Button
+
+<!--    <Button
         android:id="@+id/button1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:onClick="onClick"
         android:text="@string/start_button" >
     </Button>
-
+-->
     <ListView
         android:id="@id/android:list"
         android:layout_width="match_parent"
