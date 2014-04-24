@@ -86,7 +86,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         String response = resultData.getString("ServiceTag");
         this.wordList.add(response);
         this.adapter.notifyDataSetChanged();
-        if(this.bockRequests) { //Monitoring state
+        if(this.bockRequests) {
             return;
         }
         //Stops requests by existing fault, restarts them by timer task
