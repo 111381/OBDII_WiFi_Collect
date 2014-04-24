@@ -87,6 +87,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         this.wordList.add(response);
         this.adapter.notifyDataSetChanged();
         if(this.bockRequests) {
+            this.doCanInit();
             return;
         }
         //Stops requests by existing fault, restarts them by timer task
@@ -98,6 +99,15 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         if(this.requestsEnabled) {
             this.nextRequestFromList();
         }
+    }
+
+    private void doCanInit() {
+
+        String pid = pids.getNextCanInit();
+        if(pid == null) {
+            return;
+        }
+        requestToTcpService(pid);
     }
 
     public void nextRequestFromList() {
@@ -223,7 +233,9 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         switch (item.getItemId()) {
             case R.id.action_startCan:
                 this.bockRequests = true;
-                this.requestToTcpService("ATMA");
+                this.pids = new SupportedPids();
+                this.gpsLocation.requestLocation();
+                this.doCanInit();
                 this.textView.setText("CAN monitoring in progress");
                 return true;
             case R.id.action_startObd:

@@ -18,17 +18,32 @@ public class SupportedPids {
 
     private final String PID_FILE = "OBDIIPids.txt";
     private final String INIT_FILE = "OBDIIInit.txt";
+    private final String CAN_INIT_FILE = "CANInit.txt";
 
     private List<String> commands = new ArrayList<String>();
     private List<String> initCommands = new ArrayList<String>();
+    private List<String> canInitCommands = new ArrayList<String>();
     private Iterator<String> it = null;
     private Iterator<String> initIt = null;
+    private Iterator<String> canInitIt = null;
     private boolean initDone = false;
 
     public SupportedPids() {
 
+        if(!readFromFile(this.CAN_INIT_FILE)) {
+            canInitCommands.add("ATD");//factory settings
+            canInitCommands.add("ATTP6");//use CAN 11-bit MsgID, 500,000 baud
+            canInitCommands.add("ATH1");// headers on
+            canInitCommands.add("ATL0");//No CrLf
+            canInitCommands.add("ATS0");//Suppress Spaces
+            canInitCommands.add("ATE0");//Echo Off
+            canInitCommands.add("ATCAF0");//disable can autoformat
+            canInitCommands.add("ATCRA");//clean address
+            canInitCommands.add("ATCRA412");//Speed and Odometer
+            canInitCommands.add("ATMA");//monitor all
+        }
         //if reading from file unsuccessful
-        if(!readFromFile(this.INIT_FILE, true)) {
+        if(!readFromFile(this.INIT_FILE)) {
             initCommands.add("ATTP6");//use CAN 11-bit MsgID, 500,000 baud
             initCommands.add("ATH1");// headers on
             initCommands.add("ATL0");//No CrLf
@@ -38,8 +53,8 @@ public class SupportedPids {
             initCommands.add("ATCAF0");//disable can autoformat
             //STSBR 500000 ; sets Baud Rate to 500,000 baud
         }
-        if(!readFromFile(this.PID_FILE, false)) {
-            /*commands.add("0101");//Monitor status since DTCs cleared. (Includes malfunction indicator lamp (MIL) status and number of DTCs.)
+        if(!readFromFile(this.PID_FILE)) {
+            commands.add("0101");//Monitor status since DTCs cleared. (Includes malfunction indicator lamp (MIL) status and number of DTCs.)
             commands.add("0103");//Fuel system status
             commands.add("0104");//Calculated engine load value
             commands.add("0105");//Engine coolant temperature
@@ -63,16 +78,17 @@ public class SupportedPids {
             commands.add("0160");
             commands.add("0180");
             commands.add("01A0");
-            commands.add("01C0");*/
+            commands.add("01C0");
 
 
         }
 
         it = commands.listIterator(0);
         initIt = initCommands.listIterator(0);
+        canInitIt = canInitCommands.listIterator(0);
     }
 
-    private boolean readFromFile(String filename, boolean init) {
+    private boolean readFromFile(String filename) {
 
         if(! isExternalStorageReadable()){
             return false;
@@ -83,10 +99,14 @@ public class SupportedPids {
             BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
             String line = "";
             while((line = in.readLine()) != null){
-                if(init){
+                if(filename.equalsIgnoreCase(this.INIT_FILE)){
                     initCommands.add(line);
-                } else {
+                }
+                if(filename.equalsIgnoreCase(this.PID_FILE)){
                     commands.add(line);
+                }
+                if(filename.equalsIgnoreCase(this.CAN_INIT_FILE)){
+                    canInitCommands.add(line);
                 }
             }
             inputStream.close();
@@ -121,6 +141,14 @@ public class SupportedPids {
 
         if(this.initIt.hasNext()) {
             return initIt.next();
+        } else {
+            return null;
+        }
+    }
+
+    public String getNextCanInit() {
+        if(this.canInitIt.hasNext()) {
+            return canInitIt.next();
         } else {
             return null;
         }
