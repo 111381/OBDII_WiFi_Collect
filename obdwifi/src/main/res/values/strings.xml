@@ -6,7 +6,6 @@
     <string name="action_startOBDII">Start OBDII requests</string>
     <string name="action_stopOBDII">Stop OBDII requests</string>
     <string name="action_startCAN">Start CAN monitoring</string>
-    <string name="action_stopCAN">Stop CAN monitoring</string>
     <string name="action_save">Save to file</string>
     <!--<string name="start_button">Start OBDII requests</string>-->
 

@@ -31,16 +31,19 @@ public class SupportedPids {
     public SupportedPids() {
 
         if(!readFromFile(this.CAN_INIT_FILE)) {
-            canInitCommands.add("ATD");//factory settings
+            //canInitCommands.add("ATD");//factory settings
+            canInitCommands.add("ATWS");//factory settings
             canInitCommands.add("ATTP6");//use CAN 11-bit MsgID, 500,000 baud
             canInitCommands.add("ATH1");// headers on
             canInitCommands.add("ATL0");//No CrLf
             canInitCommands.add("ATS0");//Suppress Spaces
-            canInitCommands.add("ATE0");//Echo Off
             canInitCommands.add("ATCAF0");//disable can autoformat
-            canInitCommands.add("ATCRA");//clean address
-            canInitCommands.add("ATCRA412");//Speed and Odometer
-            canInitCommands.add("ATMA");//monitor all
+            //canInitCommands.add("ATCRA");//clean address
+            //canInitCommands.add("ATCRA412");//Speed and Odometer
+            canInitCommands.add("ATCF 412");
+            canInitCommands.add("ATCM FFF");
+            //canInitCommands.add("ATE0");//Echo Off
+            //canInitCommands.add("ATMA");//monitor all
         }
         //if reading from file unsuccessful
         if(!readFromFile(this.INIT_FILE)) {

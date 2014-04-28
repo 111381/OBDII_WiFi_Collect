@@ -18,29 +18,21 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 
 /**
- * Created by uhh on 3/31/14.
+ * Created by renet on 4/28/14.
  */
-public class TcpIntentService extends IntentService {
-    /**
-     * A constructor is required, and must call the super IntentService(String)
-     * constructor with a name for the worker thread.
-     */
-    public TcpIntentService() {
-        super("TcpIntentService");
+public class CanMonitorService extends IntentService {
+
+    public CanMonitorService() {
+        super("CanMonitorService");
     }
 
-    /**
-     * The IntentService calls this method from the default worker thread with
-     * the intent that started the service. When this method returns, IntentService
-     * stops the service, as appropriate.
-     */
     @Override
     protected void onHandleIntent(Intent intent) {
 
         synchronized (this) {
             ResultReceiver rec = intent.getParcelableExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.receiverTag");
             String outMsg = intent.getStringExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.Request");
-            Bundle b= new Bundle();
+            Bundle b = new Bundle();
             Socket socket = new Socket();
             try {
                 InetAddress ip = InetAddress.getByName(MainActivity.SERVER_IP_ADDRESS);
@@ -53,30 +45,32 @@ public class TcpIntentService extends IntentService {
                 //accept server response
                 int character = 0;
                 String inMsg = "";
-                //TODO: timeout for read lock
-                while (((character = in.read()) != 62)) { // EOL == '>'
+                long bytes = 0;
+                long endTime = System.currentTimeMillis() + 2;
+
+                while (((character = in.read()) != 62) && bytes < 10000 && System.currentTimeMillis() < endTime) { // EOL == '>'
                     inMsg = inMsg + Character.toString((char) character);
+                    Log.i("Monitor1", Character.toString((char) character));
                 }
-                Log.i("TCP", inMsg);
+
+                //The monitoring mode can be stopped by sending a single RS232 character to the ELM327.
+                out.write("a");
+                out.flush();
+                //The IC will always finish a task that is in progress (printing a line, for example) before
+                //printing ‘STOPPED’ and returning to wait for your input, so it is best to wait for the prompt character (‘>’)
+                while (((character = in.read()) != 62) && bytes < 10000) { // EOL == '>'
+                    inMsg = inMsg + Character.toString((char) character);
+                    Log.i("Monitor2", Character.toString((char) character));
+                }
+
                 socket.close();
                 b.putString("ServiceTag", inMsg);
                 rec.send(0, b);
             } catch (Exception e) {
                 b.putString("ServiceTag", FilterLogic.TCP_ERROR);
                 rec.send(0, b);
-                Log.i("TCP", FilterLogic.TCP_ERROR);
+                Log.i("Monitor", FilterLogic.TCP_ERROR);
             }
         }
-        /*// Normally we would do some work here, like download a file.
-        // For our sample, we just sleep for 5 seconds.
-        long endTime = System.currentTimeMillis() + 5*1000;
-        while (System.currentTimeMillis() < endTime) {
-            synchronized (this) {
-                try {
-                    wait(endTime - System.currentTimeMillis());
-                } catch (Exception e) {
-                }
-            }
-        }*/
     }
 }
