@@ -45,20 +45,21 @@ public class CanMonitorService extends IntentService {
                 //accept server response
                 int character = 0;
                 String inMsg = "";
-                long bytes = 0;
-                long endTime = System.currentTimeMillis() + 2;
+                long endTime = System.currentTimeMillis() + 100;
 
-                while (((character = in.read()) != 62) && bytes < 10000 && System.currentTimeMillis() < endTime) { // EOL == '>'
+                while (((character = in.read()) != 62)) { // EOL == '>'
                     inMsg = inMsg + Character.toString((char) character);
                     Log.i("Monitor1", Character.toString((char) character));
+                    if(System.currentTimeMillis() > endTime){
+                        //The monitoring mode can be stopped by sending a single RS232 character to the ELM327.
+                        out.write(" ");
+                        out.flush();
+                        break;
+                    }
                 }
-
-                //The monitoring mode can be stopped by sending a single RS232 character to the ELM327.
-                out.write("a");
-                out.flush();
                 //The IC will always finish a task that is in progress (printing a line, for example) before
                 //printing ‘STOPPED’ and returning to wait for your input, so it is best to wait for the prompt character (‘>’)
-                while (((character = in.read()) != 62) && bytes < 10000) { // EOL == '>'
+                while (((character = in.read()) != 62)) { // EOL == '>'
                     inMsg = inMsg + Character.toString((char) character);
                     Log.i("Monitor2", Character.toString((char) character));
                 }
