@@ -111,8 +111,9 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
 
         String pid = pids.getNextCanInit();
         if(pid == null) {
+            this.saveToFile();
             requestCanMonService("ATMA");
-            this.stopCanMonitoring = true;//ATMA only once
+            //this.stopCanMonitoring = true;//ATMA only once
             return;
         }
         requestToTcpService(pid);
@@ -255,6 +256,10 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                 this.gpsLocation.requestLocation();
                 this.doCanInit();
                 this.textView.setText("CAN monitoring in progress");
+                return true;
+            case R.id.action_stopCan:
+                this.stopCanMonitoring = true;
+                this.textView.setText("CAN monitoring stopped");
                 return true;
             case R.id.action_startObd:
                 this.canRequests = false;
