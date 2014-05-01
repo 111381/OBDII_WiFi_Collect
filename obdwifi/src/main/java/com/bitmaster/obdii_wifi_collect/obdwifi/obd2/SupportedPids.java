@@ -19,42 +19,49 @@ public class SupportedPids {
     private final String PID_FILE = "OBDIIPids.txt";
     private final String INIT_FILE = "OBDIIInit.txt";
     private final String CAN_INIT_FILE = "CANInit.txt";
+    private final String CAN_REQ_FILE = "CANReq.txt";
 
     private List<String> commands = new ArrayList<String>();
     private List<String> initCommands = new ArrayList<String>();
     private List<String> canInitCommands = new ArrayList<String>();
+    private List<String> canReqCommands = new ArrayList<String>();
     private Iterator<String> it = null;
     private Iterator<String> initIt = null;
     private Iterator<String> canInitIt = null;
+    private Iterator<String> canReqIt = null;
     private boolean initDone = false;
+    private boolean canInitDone = false;
 
     public SupportedPids() {
 
         if(!readFromFile(this.CAN_INIT_FILE)) {
             //canInitCommands.add("ATD");//factory settings
-            canInitCommands.add("ATWS");//factory settings
+            canInitCommands.add("ATWS");//warm restart
             canInitCommands.add("ATTP6");//use CAN 11-bit MsgID, 500,000 baud
             canInitCommands.add("ATH1");// headers on
             canInitCommands.add("ATL0");//No CrLf
             canInitCommands.add("ATS0");//Suppress Spaces
+            canInitCommands.add("ATDP");//display protocol
             canInitCommands.add("ATCAF0");//disable can autoformat
-            //canInitCommands.add("ATCRA");//clean address
-            //canInitCommands.add("ATCRA412");//Speed and Odometer
-            canInitCommands.add("ATCF 412");
-            canInitCommands.add("ATCM FFF");
+            canInitCommands.add("ATCRA");//clean address filter
             //canInitCommands.add("ATE0");//Echo Off
-            //canInitCommands.add("ATMA");//monitor all
+        }
+        if(!readFromFile(this.CAN_REQ_FILE)) {
+            canReqCommands.add("ATCRA374");//State Of Charge - 100ms
+            canReqCommands.add("ATCRA346");//Range - 20 ms
+            canReqCommands.add("ATCRA412");// Speed - 100 ms
+            canReqCommands.add("ATCRA418");//Shifter - 20 ms
+            canReqCommands.add("ATCRA373");//Amp & Volt - 10 ms
         }
         //if reading from file unsuccessful
         if(!readFromFile(this.INIT_FILE)) {
-            initCommands.add("ATTP6");//use CAN 11-bit MsgID, 500,000 baud
-            initCommands.add("ATH1");// headers on
+            initCommands.add("ATTP3");//try protocol
+            //initCommands.add("ATH1");// headers on
             initCommands.add("ATL0");//No CrLf
             initCommands.add("ATS0");//Suppress Spaces
-            initCommands.add("ATE0");//Echo Off
-            //initCommands.add("ATMA");//monitor all
-            initCommands.add("ATCAF0");//disable can autoformat
-            //STSBR 500000 ; sets Baud Rate to 500,000 baud
+            //initCommands.add("ATE0");//Echo Off
+            initCommands.add("0100");//BUS INIT ...
+            initCommands.add("ATDP");//display protocol
         }
         if(!readFromFile(this.PID_FILE)) {
             commands.add("0101");//Monitor status since DTCs cleared. (Includes malfunction indicator lamp (MIL) status and number of DTCs.)
@@ -74,21 +81,19 @@ public class SupportedPids {
             commands.add("0115");//Bank 1, Sensor 2: Oxygen sensor voltage, Short term fuel trim
             commands.add("011C");//OBD standards this vehicle conforms to
             commands.add("0121");//Distance traveled with malfunction indicator lamp (MIL) on
-
-            commands.add("0100");
-            commands.add("0120");
-            commands.add("0140");
-            commands.add("0160");
-            commands.add("0180");
-            commands.add("01A0");
-            commands.add("01C0");
-
-
+            //commands.add("0100");
+            //commands.add("0120");
+            //commands.add("0140");
+            //commands.add("0160");
+            //commands.add("0180");
+            //commands.add("01A0");
+            //commands.add("01C0");
         }
 
         it = commands.listIterator(0);
         initIt = initCommands.listIterator(0);
         canInitIt = canInitCommands.listIterator(0);
+        canReqIt = canReqCommands.listIterator(0);
     }
 
     private boolean readFromFile(String filename) {
@@ -110,6 +115,9 @@ public class SupportedPids {
                 }
                 if(filename.equalsIgnoreCase(this.CAN_INIT_FILE)){
                     canInitCommands.add(line);
+                }
+                if(filename.equalsIgnoreCase(this.CAN_REQ_FILE)){
+                    canReqCommands.add(line);
                 }
             }
             inputStream.close();
@@ -157,11 +165,29 @@ public class SupportedPids {
         }
     }
 
+    public String getNextCan() {
+
+        if(this.canReqIt.hasNext()) {
+            return this.canReqIt.next();
+        } else {
+            this.canReqIt = this.canReqCommands.listIterator(0);
+            return null;
+        }
+    }
+
     public boolean isInitDone() {
         return initDone;
     }
 
     public void setInitDone(boolean initDone) {
         this.initDone = initDone;
+    }
+
+    public boolean isCanInitDone() {
+        return canInitDone;
+    }
+
+    public void setCanInitDone(boolean canInitDone) {
+        this.canInitDone = canInitDone;
     }
 }

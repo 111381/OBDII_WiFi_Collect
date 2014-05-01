@@ -41,6 +41,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
     private boolean requestsEnabled = false;
     private boolean canRequests = true; //first priority block all futher OBDII responses
     private boolean stopCanMonitoring = false;
+    private boolean setCanFilter = false;
 
     private WifiManager wifi = null;
     private WifiManager.WifiLock wifiLock = null;
@@ -93,7 +94,12 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             if(this.stopCanMonitoring){
                 return;
             }
-            this.doCanInit();
+            if(this.setCanFilter){
+                this.setCanFilter = false;
+                this.requestCanMonService("ATMA");
+            } else {
+                this.nextCanRequest();
+            }
             return;
         }
         //Stops requests by existing fault, restarts them by timer task
@@ -116,7 +122,29 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             //this.stopCanMonitoring = true;//ATMA only once
             return;
         }
-        requestToTcpService(pid);
+        this.requestToTcpService(pid);
+    }
+    private void nextCanRequest() {
+
+        String pid;
+        // call recursively:
+        // First do init requests since response 'null'
+        if(!pids.isCanInitDone()) {
+            pid = pids.getNextCanInit();
+            if(pid == null) {
+                pids.setCanInitDone(true);
+            }
+        } else {
+            pid = pids.getNextCan();
+            this.setCanFilter = true; //request for can filtering
+        }
+        // next request with next PID
+        if(pid == null) {
+            saveToFile();
+            pid = pids.getNextCan();
+            this.setCanFilter = true; //request for can filtering
+        }
+        this.requestToTcpService(pid);
     }
 
     public void nextRequestFromList() {
@@ -170,6 +198,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.Request", request);
         mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.receiverTag", mReceiver);
         this.startService(mServiceIntent);
+        Log.i("requestTcp", request);
     }
 
     private void requestCanMonService(String request) {
@@ -252,9 +281,10 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             case R.id.action_startCan:
                 this.canRequests = true;
                 this.stopCanMonitoring = false;
+                this.setCanFilter = false;
                 this.pids = new SupportedPids();
                 this.gpsLocation.requestLocation();
-                this.doCanInit();
+                this.nextCanRequest();
                 this.textView.setText("CAN monitoring in progress");
                 return true;
             case R.id.action_stopCan:
