@@ -20,6 +20,8 @@ import com.bitmaster.obdii_wifi_collect.obdwifi.io.TcpIntentService;
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.WriteDownService;
 import com.bitmaster.obdii_wifi_collect.obdwifi.loc.GpsLocation;
 import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.FilterLogic;
+import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.MapCanValues;
+import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.Message;
 import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.SupportedPids;
 
 import java.text.SimpleDateFormat;
@@ -88,9 +90,8 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
     public void onReceiveResult(int resultCode, Bundle resultData) {
 
         String response = resultData.getString("ServiceTag");
-        this.wordList.add(response);
-        this.adapter.notifyDataSetChanged();
         if(this.canRequests) {
+            this.onCanMessageReceive(response);
             if(this.stopCanMonitoring){
                 return;
             }
@@ -102,6 +103,8 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             }
             return;
         }
+        this.wordList.add(response);
+        this.adapter.notifyDataSetChanged();
         //Stops requests by existing fault, restarts them by timer task
         FilterLogic filter = new FilterLogic(this);
         if(filter.isResponseFaulty(response)){
@@ -111,6 +114,36 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         if(this.requestsEnabled) {
             this.nextRequestFromList();
         }
+    }
+
+    private void onCanMessageReceive(String received) {
+
+        String response = received.replace("\n", "\r");
+        int fromIndex = 0;
+        int crIndex;
+        String row = "";
+        while(true) {
+            crIndex = response.indexOf(13, fromIndex);
+            if(crIndex == -1) {
+                row = row + response.substring(fromIndex) + " <- No <CR>";
+                break;
+            }
+            String message = response.substring(fromIndex, crIndex);//get single message
+            row = row + message + ", ";
+            Message decodedMessage = MapCanValues.decodeCanMessage(message);
+            if(decodedMessage != null){
+                row = row + decodedMessage.getPid() + ", ";
+                row = row + decodedMessage.getValue1() + ", ";
+                if(decodedMessage.getValue2() != null){
+                    row = row + decodedMessage.getValue2();
+                }
+                break;
+            }
+            fromIndex = crIndex + 1; //next occurrence
+        }
+
+        this.wordList.add(row);
+        this.adapter.notifyDataSetChanged();
     }
 
     private void doCanInit() {
