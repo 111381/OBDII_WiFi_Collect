@@ -23,6 +23,7 @@ import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.FilterLogic;
 import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.MapCanValues;
 import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.Message;
 import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.SupportedPids;
+import com.bitmaster.obdii_wifi_collect.obdwifi.prediction.ConsumptionMap;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -50,6 +51,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
 
     public static int TCP_SERVER_PORT = 35000;
     public static String SERVER_IP_ADDRESS = "192.168.0.10";
+    //public static String SERVER_IP_ADDRESS = "192.168.1.5";
     public static int SOCKET_CONN_TIMEOUT = 30*1000;
 
     @Override
@@ -125,17 +127,20 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         while(true) {
             crIndex = response.indexOf(13, fromIndex);
             if(crIndex == -1) {
-                row = row + response.substring(fromIndex) + " <- No <CR>";
-                break;
+                //row = row + response.substring(fromIndex) + " <- No <CR>";
+                return;
             }
             String message = response.substring(fromIndex, crIndex);//get single message
-            row = row + message + ", ";
+            //row = row + message + "\r ";
             Message decodedMessage = MapCanValues.decodeCanMessage(message);
             if(decodedMessage != null){
-                row = row + decodedMessage.getPid() + ", ";
-                row = row + decodedMessage.getValue1() + ", ";
+
+                ConsumptionMap.setMapValue(decodedMessage);
+
+                row = row + decodedMessage.getPid() + "\r";
+                row = row + decodedMessage.getValue1() + "\r";
                 if(decodedMessage.getValue2() != null){
-                    row = row + decodedMessage.getValue2();
+                    row = row + decodedMessage.getValue2() + "\r";
                 }
                 break;
             }
@@ -248,11 +253,11 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         Location loc = this.gpsLocation.getLocation();
         String latitude = "0";
         String longitude = "0";
-        String speed = "0";
+        String altitude = "0";
         if(loc != null){
             latitude = Double.toString(loc.getLatitude());
             longitude = Double.toString(loc.getLongitude());
-            speed = Double.toString(loc.getSpeed());
+            altitude = Double.toString(loc.getAltitude());
         }
         String line = "";
         Iterator<String> it = this.wordList.iterator();
@@ -261,7 +266,9 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         }
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String currentDateandTime = sdf.format(new Date());
-        String csvLine = currentDateandTime + "," + line + "," + latitude + "," + longitude + "," + speed + ";\n";
+        String csvLine = currentDateandTime + "," + line + ","
+                + latitude + "," + longitude + "," + altitude + ","
+                + MapCanValues.getAcceleration() + ";\n";
 
         Intent mServiceIntent = new Intent(this, WriteDownService.class);
         mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.csvLine", csvLine);
@@ -322,6 +329,8 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                 return true;
             case R.id.action_stopCan:
                 this.stopCanMonitoring = true;
+                this.textView.setText("Saving Map ...");
+                ConsumptionMap.writePowerMapToFile();
                 this.textView.setText("CAN monitoring stopped");
                 return true;
             case R.id.action_startObd:

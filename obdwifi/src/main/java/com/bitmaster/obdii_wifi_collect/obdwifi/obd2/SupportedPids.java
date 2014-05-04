@@ -47,11 +47,11 @@ public class SupportedPids {
             //canInitCommands.add("ATE0");//Echo Off
         }
         if(!readFromFile(this.CAN_REQ_FILE)) {
-            canReqCommands.add("ATCRA374");//State Of Charge - 100ms
-            canReqCommands.add("ATCRA346");//Range - 20 ms
+            canReqCommands.add("ATCRA373");//Amp & Volt - 10 ms
             canReqCommands.add("ATCRA412");// Speed - 100 ms
             canReqCommands.add("ATCRA418");//Shifter - 20 ms
-            canReqCommands.add("ATCRA373");//Amp & Volt - 10 ms
+            canReqCommands.add("ATCRA346");//Range - 20 ms
+            canReqCommands.add("ATCRA374");//State Of Charge - 100ms
         }
         //if reading from file unsuccessful
         if(!readFromFile(this.INIT_FILE)) {

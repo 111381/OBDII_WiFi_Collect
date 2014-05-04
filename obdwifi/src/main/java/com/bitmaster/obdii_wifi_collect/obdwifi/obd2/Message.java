@@ -11,6 +11,8 @@ public class Message {
 
     public Message(String pid, String value1, String value2) {
         this.pid = pid;
+        this.value1 = value1;
+        this.value2 = value2;
     }
 
     public String getPid() {
