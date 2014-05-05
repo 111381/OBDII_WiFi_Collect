@@ -131,6 +131,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                 return;
             }
             String message = response.substring(fromIndex, crIndex);//get single message
+            Log.i("CAN_Message", message);
             //row = row + message + "\r ";
             Message decodedMessage = MapCanValues.decodeCanMessage(message);
             if(decodedMessage != null){

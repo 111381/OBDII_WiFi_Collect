@@ -33,7 +33,7 @@ public class MapCanValues {
 
                 long speed = Long.parseLong(message.substring(5, 7), 16);
 
-                acceleration = (double)(speed - lastSpeed) / (double)(System.currentTimeMillis() - lastTime);
+                acceleration = ((double)(speed - lastSpeed) / 3.6) / ((double)(System.currentTimeMillis() - lastTime) / 1000) ; // m/s2
                 lastSpeed = speed;
                 lastTime = System.currentTimeMillis();
 
