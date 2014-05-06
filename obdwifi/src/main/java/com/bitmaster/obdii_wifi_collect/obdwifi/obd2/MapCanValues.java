@@ -24,6 +24,8 @@ public class MapCanValues {
 
     private static long lastSpeed;
     private static long lastTime;
+    private static double lastAmp;
+    private static double lastVolt;
     private static double acceleration;
 
 
@@ -32,8 +34,8 @@ public class MapCanValues {
             if( message.length() == 19 && message.substring(0, 3).equalsIgnoreCase(SPEED)) {
 
                 long speed = Long.parseLong(message.substring(5, 7), 16);
-
                 acceleration = ((double)(speed - lastSpeed) / 3.6) / ((double)(System.currentTimeMillis() - lastTime) / 1000) ; // m/s2
+                long averageSpeed = Math.round(((double)speed + (double)lastSpeed) / 2);
                 lastSpeed = speed;
                 lastTime = System.currentTimeMillis();
 
@@ -41,7 +43,7 @@ public class MapCanValues {
                         (Long.parseLong(message.substring(9, 11), 16) * 256) +
                         Long.parseLong(message.substring(11, 13), 16);
 
-                return new Message(SPEED, Long.toString(speed), Long.toString(odo));
+                return new Message(SPEED, Long.toString(averageSpeed), Long.toString(odo));
             }
             if(message.length() == 19 && message.substring(0, 3).equalsIgnoreCase(SOC)) {
 
@@ -52,11 +54,15 @@ public class MapCanValues {
 
                 double amp = ((double)(Long.parseLong(message.substring(7, 9), 16) * 256) +
                         (double)(Long.parseLong(message.substring(9, 11), 16) - (128 * 256))) / 100;
+                double averageAmp = (amp + lastAmp) / 2;
+                lastAmp = amp;
 
                 double volt = ((double)(Long.parseLong(message.substring(11, 13), 16) * 256) +
                         (double)Long.parseLong(message.substring(13, 15), 16)) / 10;
+                double averageVolt = (volt + lastVolt) /2;
+                lastVolt = volt;
 
-                return new Message(POWER, Double.toString(amp), Double.toString(volt));
+                return new Message(POWER, Double.toString(averageAmp), Double.toString(averageVolt));
             }
             if(message.length() == 19 && message.substring(0, 3).equalsIgnoreCase(RANGE)) {
 

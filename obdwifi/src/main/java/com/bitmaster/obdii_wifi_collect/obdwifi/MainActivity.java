@@ -59,6 +59,8 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        ConsumptionMap.readPowerMapFromFile();
+
         this.wordList = new ArrayList<String>();
         this.adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, wordList);
         this.setListAdapter(adapter);
