@@ -11,7 +11,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
@@ -20,10 +19,9 @@ import com.bitmaster.obdii_wifi_collect.obdwifi.io.TcpIntentService;
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.WriteDownService;
 import com.bitmaster.obdii_wifi_collect.obdwifi.loc.GpsLocation;
 import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.FilterLogic;
-import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.MapCanValues;
-import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.Message;
+import com.bitmaster.obdii_wifi_collect.obdwifi.prediction.MapCanValues;
 import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.SupportedPids;
-import com.bitmaster.obdii_wifi_collect.obdwifi.prediction.ConsumptionMap;
+import com.bitmaster.obdii_wifi_collect.obdwifi.prediction.SaveMapsService;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -59,7 +57,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ConsumptionMap.readPowerMapFromFile();
+        this.mapsToFile(false);//read
 
         this.wordList = new ArrayList<String>();
         this.adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, wordList);
@@ -134,17 +132,15 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             }
             String message = response.substring(fromIndex, crIndex);//get single message
             Log.i("CAN_Message", message);
-            //row = row + message + "\r ";
-            Message decodedMessage = MapCanValues.decodeCanMessage(message);
-            if(decodedMessage != null){
+            if(MapCanValues.decodeCanMessage(message)){ //if correct message
 
-                ConsumptionMap.setMapValue(decodedMessage);
-
-                row = row + decodedMessage.getPid() + "\r";
+                MapCanValues.setMapValues();
+                row = row + message + "\r ";
+               /* row = row + MapCanValues.currentPID + "\r";
                 row = row + decodedMessage.getValue1() + "\r";
                 if(decodedMessage.getValue2() != null){
                     row = row + decodedMessage.getValue2() + "\r";
-                }
+                }*/
                 break;
             }
             fromIndex = crIndex + 1; //next occurrence
@@ -154,17 +150,6 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         this.adapter.notifyDataSetChanged();
     }
 
-    private void doCanInit() {
-
-        String pid = pids.getNextCanInit();
-        if(pid == null) {
-            this.saveToFile();
-            requestCanMonService("ATMA");
-            //this.stopCanMonitoring = true;//ATMA only once
-            return;
-        }
-        this.requestToTcpService(pid);
-    }
     private void nextCanRequest() {
 
         String pid;
@@ -251,6 +236,12 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         Log.i("requestCanMon", request);
     }
 
+    private void mapsToFile(boolean write) {
+        Intent mServiceIntent = new Intent(this, SaveMapsService.class);//write = true, read = false
+        mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.prediction.Write", write);
+        this.startService(mServiceIntent);
+    }
+
     public void saveToFile() {
 
         Location loc = this.gpsLocation.getLocation();
@@ -271,7 +262,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         String currentDateandTime = sdf.format(new Date());
         String csvLine = currentDateandTime + "," + line + ","
                 + latitude + "," + longitude + "," + altitude + ","
-                + MapCanValues.getAcceleration() + ";\n";
+                + Double.toString(MapCanValues.acceleration) + ";\n";
 
         Intent mServiceIntent = new Intent(this, WriteDownService.class);
         mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.csvLine", csvLine);
@@ -333,7 +324,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             case R.id.action_stopCan:
                 this.stopCanMonitoring = true;
                 this.textView.setText("Saving Map ...");
-                ConsumptionMap.writePowerMapToFile();
+                this.mapsToFile(true);//write
                 this.textView.setText("CAN monitoring stopped");
                 return true;
             case R.id.action_startObd:

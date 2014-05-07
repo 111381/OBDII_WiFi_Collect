@@ -28,6 +28,9 @@
         <service
             android:name="com.bitmaster.obdii_wifi_collect.obdwifi.io.CanMonitorService"
             android:exported="false"/>
+        <service
+            android:name="com.bitmaster.obdii_wifi_collect.obdwifi.prediction.SaveMapsService"
+            android:exported="false"/>
 
     </application>
 
