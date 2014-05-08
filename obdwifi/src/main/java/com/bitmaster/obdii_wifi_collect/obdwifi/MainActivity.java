@@ -128,7 +128,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         String response = received.replace("\n", "\r");
         int fromIndex = 0;
         int crIndex;
-        String row = "";
+        //String row = "";
         while(true) {
             crIndex = response.indexOf(13, fromIndex);
             if(crIndex == -1) {
@@ -136,12 +136,12 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                 return;
             }
             String message = response.substring(fromIndex, crIndex);//get single message
-            Log.i("CAN_Message", message);
+            //Log.i("CAN_Message", message);
             if(MapCanValues.decodeCanMessage(message)){ //if correct message
 
                 MapCanValues.setMapValues();
-                row = row + message + "\r ";
-               /* row = row + MapCanValues.currentPID + "\r";
+                //row = row + message + "\r ";
+                /*row = row + MapCanValues.currentPID + "\r";
                 row = row + decodedMessage.getValue1() + "\r";
                 if(decodedMessage.getValue2() != null){
                     row = row + decodedMessage.getValue2() + "\r";
@@ -150,8 +150,9 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             }
             fromIndex = crIndex + 1; //next occurrence
         }
-
-        this.wordList.add(row);
+        Log.i("Row", MapCanValues.row);
+        this.wordList.add(MapCanValues.row);
+        MapCanValues.row = "";
         this.adapter.notifyDataSetChanged();
     }
 

@@ -38,6 +38,7 @@ public class MapCanValues {
     public static String shift;
 
     public static String currentPID;
+    public static String row = "";
 
     public static int [][] driveConsumption = new int[SPEED_MAP_SIZE][ACC_MAP_SIZE]; //32768 * 4 bytes
     public static int [][] driveFrequency = new int[SPEED_MAP_SIZE][ACC_MAP_SIZE]; //32768 * 4 bytes
@@ -61,6 +62,7 @@ public class MapCanValues {
                 odo = (Integer.parseInt(message.substring(7, 9), 16) * 65536) +
                         (Integer.parseInt(message.substring(9, 11), 16) * 256) +
                         Integer.parseInt(message.substring(11, 13), 16);
+                row = row + currentPID + "\r" + Integer.toString(speed) + "\r" + Integer.toString(odo) + "\r";
                 return true;
             }
             if(message.length() == 19 && message.substring(0, 3).equalsIgnoreCase(SOC)) {
@@ -68,6 +70,7 @@ public class MapCanValues {
                 currentPID = SOC;
 
                 soc = ((double)Long.parseLong(message.substring(5, 7), 16) - 10) / 2;
+                row = row + currentPID + "\r" + Double.toString(soc) + "\r";
                 return true;
             }
             if(message.length() == 19 && message.substring(0, 3).equalsIgnoreCase(POWER)) {
@@ -85,6 +88,7 @@ public class MapCanValues {
                 volt = (currentVolt + lastVolt) /2;
 
                 lastVolt = currentVolt;
+                row = row + currentPID + "\r" + Double.toString(amp) + "\r" + Double.toString(volt) +"\r";
                 return true;
             }
             if(message.length() == 19 && message.substring(0, 3).equalsIgnoreCase(RANGE)) {
@@ -92,6 +96,7 @@ public class MapCanValues {
                 currentPID = RANGE;
 
                 range = Integer.parseInt(message.substring(17, 19), 16);
+                row = row + currentPID + "\r" + Integer.toString(range) + "\r";
                 return true;
             }
             if(message.length() == 17 && message.substring(0, 3).equalsIgnoreCase(SHIFT)) {
@@ -116,6 +121,7 @@ public class MapCanValues {
                 if(message.substring(3, 5).equalsIgnoreCase("32")) {
                     shift = ECO;
                 }
+                row = row + currentPID + "\r" + shift + "\r";
                 return true;
             }
 
