@@ -14,6 +14,8 @@ import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+import com.bitmaster.obdii_wifi_collect.obdwifi.googleapis.MakeRoute;
+import com.bitmaster.obdii_wifi_collect.obdwifi.googleapis.RouteStep;
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.CanMonitorService;
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.TcpIntentService;
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.WriteDownService;
@@ -39,6 +41,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
 
     public ObdResultReceiver mReceiver;
     private SupportedPids pids = null;
+    //private MakeRoute route = null;
     private boolean requestsEnabled = false;
     private boolean canRequests = true; //first priority block all futher OBDII responses
     private boolean stopCanMonitoring = false;
@@ -86,6 +89,8 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         }
         this.textView = (TextView) findViewById(R.id.text_view);
         this.textView.setText(inf.getSSID());
+
+        //this.route = new MakeRoute("59.3913274,24.6640021", "riida");
     }
 
     @Override
@@ -339,6 +344,24 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             case R.id.action_save:
                 this.textView.setText("Saving to file");
                 this.saveToFile();
+                return true;
+            case R.id.action_google:
+               /* this.textView.setText("Calculating route to destination");
+                List<RouteStep> routeSteps = this.route.getSteps();
+                Iterator<RouteStep> it = routeSteps.iterator();
+                while(it.hasNext()){
+
+                    //TODO: values can be null
+                    RouteStep s = it.next();
+                    this.wordList.add(s.getStartLat());
+                    this.wordList.add(s.getStartLng());
+                    this.wordList.add(s.getEndLat());
+                    this.wordList.add(s.getEndLng());
+                    this.wordList.add(s.getDuration());
+                    this.wordList.add(s.getInstructions());
+                    this.wordList.add(s.getDistance());
+                }
+                this.adapter.notifyDataSetChanged();*/
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

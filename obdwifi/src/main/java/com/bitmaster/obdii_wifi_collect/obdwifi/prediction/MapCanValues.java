@@ -135,11 +135,11 @@ public class MapCanValues {
             // check if fits to array
             if((0 <= speed) && (speed < SPEED_MAP_SIZE) && (0 <= acc) && (acc < ACC_MAP_SIZE)) {
                 int existValue = driveConsumption[speed][acc];
-                if(existValue == 0) {
-                    driveConsumption[speed][acc] = power;
-                } else {
-                    driveConsumption[speed][acc] = (int)(((double)power + (double)existValue) / 2);
-                }
+                int existFrequency = driveFrequency[speed][acc];
+
+                driveConsumption[speed][acc] = (int)(((double)power + (double)(existValue * existFrequency))
+                        / (double)(existFrequency + 1));
+
                 driveFrequency[speed][acc]++;
             }
         }

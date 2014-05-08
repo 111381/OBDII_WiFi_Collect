@@ -23,4 +23,8 @@
         android:title="@string/action_save"
         android:orderInCategory="103"
         app:showAsAction="always" />
+    <item android:id="@+id/action_google"
+        android:title="@string/action_google"
+        android:orderInCategory="104"
+        app:showAsAction="always" />
 </menu>
