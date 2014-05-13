@@ -9,10 +9,14 @@ import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bitmaster.obdii_wifi_collect.obdwifi.googleapis.MakeRoute;
 import com.bitmaster.obdii_wifi_collect.obdwifi.googleapis.RouteStep;
@@ -38,11 +42,13 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
     private ArrayAdapter<String> adapter = null;
     private List<String> wordList = null;
     private TextView textView = null;
+    private EditText edittext= null;
+    public static String readyForDestination = "No request";
     private GpsLocation gpsLocation = null;
 
     public ObdResultReceiver mReceiver;
     private SupportedPids pids = null;
-    //private MakeRoute route = null;
+    private MakeRoute route = null;
     private boolean requestsEnabled = false;
     private boolean canRequests = true; //first priority block all futher OBDII responses
     private boolean stopCanMonitoring = false;
@@ -83,15 +89,13 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         //IP-192.168.1.150 - channel:1
         this.wifi = (WifiManager)this.getSystemService(Context.WIFI_SERVICE);
         this.wifiLock = wifi.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "HighPerf wifi lock");
-        wifiLock.acquire();
         WifiInfo inf = wifi.getConnectionInfo();
         if(inf.getSSID().equalsIgnoreCase("V-LINK")){
             SERVER_IP_ADDRESS = "192.168.0.150";
         }
         this.textView = (TextView) findViewById(R.id.text_view);
         this.textView.setText(inf.getSSID());
-
-        //this.route = new MakeRoute("59.3913274,24.6640021", "riida");
+        this.addDestinationListener();
     }
 
     @Override
@@ -316,6 +320,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         // Handle item selection
         switch (item.getItemId()) {
             case R.id.action_startCan:
+                this.wifiLock.acquire();
                 this.canRequests = true;
                 this.stopCanMonitoring = false;
                 this.setCanFilter = false;
@@ -325,17 +330,20 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                 this.textView.setText("CAN monitoring in progress");
                 return true;
             case R.id.action_stopCan:
+                this.wifiLock.release();
                 this.stopCanMonitoring = true;
                 this.textView.setText("Saving Map ...");
                 this.mapsToFile(true);//write
                 this.textView.setText("CAN monitoring stopped");
                 return true;
             case R.id.action_startObd:
+                this.wifiLock.acquire();
                 this.canRequests = false;
                 this.startRequests("ATWS");//warm reset, without LED test
                 this.textView.setText("OBDII request sequence");
                 return true;
             case R.id.action_stopObd:
+                this.wifiLock.release();
                 this.requestsEnabled = false;
                 this.textView.setText("OBDII requests disabled");
                 return true;
@@ -344,11 +352,13 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                 this.saveToFile();
                 return true;
             case R.id.action_google:
-               /* this.textView.setText("Calculating route to destination");
+                this.textView.setText("Google Service Request Status: " + readyForDestination);
+                if(!readyForDestination.equalsIgnoreCase("OK")) {
+                    return true;
+                }
                 List<RouteStep> routeSteps = this.route.getSteps();
                 Iterator<RouteStep> it = routeSteps.iterator();
                 while(it.hasNext()){
-
                     //TODO: values can be null
                     RouteStep s = it.next();
                     this.wordList.add(s.getStartLat());
@@ -359,10 +369,32 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                     this.wordList.add(s.getInstructions());
                     this.wordList.add(s.getDistance());
                 }
-                this.adapter.notifyDataSetChanged();*/
+                this.adapter.notifyDataSetChanged();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private void addDestinationListener() {
+        // get edittext component
+        edittext = (EditText) findViewById(R.id.destination);
+        // add a keylistener to monitor the keaybord avitvity...
+        edittext.setOnKeyListener(new View.OnKeyListener() {
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                // if the users pressed a button and that button was "0"
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                    readyForDestination = "Request at action";
+                    String origin = "59.3913274,24.6640021";
+                    Location loc = gpsLocation.getLocation();
+                    if(loc != null) {
+                        origin = Double.toString(loc.getLatitude()) + "," + Double.toString(loc.getLongitude());
+                    }
+                    route = new MakeRoute(origin, edittext.getText().toString());
+                    return true;
+                }
+                return false;
+            }
+        });
     }
 }

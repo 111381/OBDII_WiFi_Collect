@@ -3,6 +3,8 @@ package com.bitmaster.obdii_wifi_collect.obdwifi.googleapis;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import com.bitmaster.obdii_wifi_collect.obdwifi.MainActivity;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
@@ -67,6 +69,7 @@ class RequestGoogleDirections extends AsyncTask<String, String, String> {
 
         Document doc = getDomElement(result);
         Node status = doc.getElementsByTagName("status").item(0);
+        MainActivity.readyForDestination = status.getTextContent();
         if(!status.getTextContent().equalsIgnoreCase("OK")) {
             return;
         }

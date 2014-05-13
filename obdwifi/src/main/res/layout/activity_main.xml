@@ -18,14 +18,12 @@ tools:ignore="MergeRootFrame" />
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
-<!--    <Button
-        android:id="@+id/button1"
-        android:layout_width="wrap_content"
+    <EditText
+        android:id="@+id/destination"
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:onClick="onClick"
-        android:text="@string/start_button" >
-    </Button>
--->
+        android:inputType="text" />
+
     <ListView
         android:id="@id/android:list"
         android:layout_width="match_parent"
