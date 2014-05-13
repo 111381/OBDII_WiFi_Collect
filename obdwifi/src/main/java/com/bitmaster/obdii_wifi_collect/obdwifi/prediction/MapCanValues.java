@@ -23,6 +23,8 @@ public class MapCanValues {
     private static final int SPEED_MAP_SIZE = 128;
     private static final int ACC_MAP_SIZE = 256;
 
+    public static final double CAPACITY = 16000.0;
+
     private static long lastSpeed;
     private static long lastTime;
     private static double lastAmp;

@@ -21,6 +21,7 @@ import com.bitmaster.obdii_wifi_collect.obdwifi.io.TcpIntentService;
 import com.bitmaster.obdii_wifi_collect.obdwifi.io.WriteDownService;
 import com.bitmaster.obdii_wifi_collect.obdwifi.loc.GpsLocation;
 import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.FilterLogic;
+import com.bitmaster.obdii_wifi_collect.obdwifi.prediction.CalculateMaps;
 import com.bitmaster.obdii_wifi_collect.obdwifi.prediction.MapCanValues;
 import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.SupportedPids;
 import com.bitmaster.obdii_wifi_collect.obdwifi.prediction.SaveMapsService;
@@ -140,12 +141,6 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             if(MapCanValues.decodeCanMessage(message)){ //if correct message
 
                 MapCanValues.setMapValues();
-                //row = row + message + "\r ";
-                /*row = row + MapCanValues.currentPID + "\r";
-                row = row + decodedMessage.getValue1() + "\r";
-                if(decodedMessage.getValue2() != null){
-                    row = row + decodedMessage.getValue2() + "\r";
-                }*/
                 break;
             }
             fromIndex = crIndex + 1; //next occurrence
@@ -269,6 +264,8 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         String csvLine = currentDateandTime + "," + line + ","
                 + latitude + "," + longitude + "," + altitude + ","
                 + Double.toString(MapCanValues.acceleration) + ";\n";
+                //+ Double.toString(CalculateMaps.calculatePowerAtSpeed(MapCanValues.speed)) + ","
+                //+ Double.toString(CalculateMaps.calculateRangeAtSpeed(MapCanValues.speed)) + ",";
 
         Intent mServiceIntent = new Intent(this, WriteDownService.class);
         mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.csvLine", csvLine);
@@ -368,13 +365,4 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                 return super.onOptionsItemSelected(item);
         }
     }
-
-    /*public void onClick(View view) {
-
-        if(this.requestsEnabled) {
-            this.requestsEnabled = false;
-            return;
-        }
-        this.startRequests("ATWS");//warm reset, without LED test
-    }*/
 }
