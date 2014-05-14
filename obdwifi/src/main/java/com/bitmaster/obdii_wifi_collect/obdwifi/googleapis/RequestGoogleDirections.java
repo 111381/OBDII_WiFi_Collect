@@ -34,7 +34,12 @@ import javax.xml.parsers.ParserConfigurationException;
  */
 class RequestGoogleDirections extends AsyncTask<String, String, String> {
 
-    static List<RouteStep> routeSteps = new ArrayList<RouteStep>();
+    protected static  List<RouteStep> routeSteps = new ArrayList<RouteStep>();
+    private MainActivity activity;
+
+    public RequestGoogleDirections(MainActivity a) {
+        this.activity = a;
+    }
 
     @Override
     protected String doInBackground(String... uri) {
@@ -56,9 +61,9 @@ class RequestGoogleDirections extends AsyncTask<String, String, String> {
                 throw new IOException(statusLine.getReasonPhrase());
             }
         } catch (ClientProtocolException e) {
-            //TODO Handle problems..
+            this.activity.googleServiceRequestCompleted(e.getLocalizedMessage());
         } catch (IOException e) {
-            //TODO Handle problems..
+            this.activity.googleServiceRequestCompleted(e.getLocalizedMessage());
         }
         return responseString;
     }
@@ -69,8 +74,9 @@ class RequestGoogleDirections extends AsyncTask<String, String, String> {
 
         Document doc = getDomElement(result);
         Node status = doc.getElementsByTagName("status").item(0);
-        MainActivity.readyForDestination = status.getTextContent();
         if(!status.getTextContent().equalsIgnoreCase("OK")) {
+            //status: FAIL
+            this.activity.googleServiceRequestCompleted(status.getTextContent());
             return;
         }
         NodeList nl = doc.getElementsByTagName("step");
@@ -94,6 +100,8 @@ class RequestGoogleDirections extends AsyncTask<String, String, String> {
 
             routeSteps.add(routeStep);
         }
+        //status: OK
+        this.activity.googleServiceRequestCompleted(status.getTextContent());
     }
 
     public Document getDomElement(String xml){
@@ -108,13 +116,13 @@ class RequestGoogleDirections extends AsyncTask<String, String, String> {
             doc = db.parse(is);
 
         } catch (ParserConfigurationException e) {
-            Log.e("Error: ", e.getMessage());
+            this.activity.googleServiceRequestCompleted(e.getLocalizedMessage());
             return null;
         } catch (SAXException e) {
-            Log.e("Error: ", e.getMessage());
+            this.activity.googleServiceRequestCompleted(e.getLocalizedMessage());
             return null;
         } catch (IOException e) {
-            Log.e("Error: ", e.getMessage());
+            this.activity.googleServiceRequestCompleted(e.getLocalizedMessage());
             return null;
         }
         // return DOM

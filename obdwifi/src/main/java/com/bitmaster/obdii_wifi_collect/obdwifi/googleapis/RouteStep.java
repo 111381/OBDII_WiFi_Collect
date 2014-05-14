@@ -5,67 +5,69 @@ package com.bitmaster.obdii_wifi_collect.obdwifi.googleapis;
  */
 public class RouteStep {
 
-    private String startLat = "";
-    private String startLng = "";
-    private String endLat = "";
-    private String endLng = "";
-    private String duration = "";
-    private String distance = "";
-    private String instructions = "";
+    private double startLat;
+    private double startLng;
+    private double endLat;
+    private double endLng;
+    private float duration;
+    private float distance;
+    private String instructions;
 
-    public String getStartLat() {
-        return startLat;
-    }
+
 
     public void setStartLat(String startLat) {
-        this.startLat = startLat;
-    }
-
-    public String getStartLng() {
-        return startLng;
+        this.startLat = Double.parseDouble(startLat);
     }
 
     public void setStartLng(String startLng) {
-        this.startLng = startLng;
-    }
-
-    public String getEndLat() {
-        return endLat;
+        this.startLng = Double.parseDouble(startLng);
     }
 
     public void setEndLat(String endLat) {
-        this.endLat = endLat;
-    }
-
-    public String getEndLng() {
-        return endLng;
+        this.endLat = Double.parseDouble(endLat);
     }
 
     public void setEndLng(String endLng) {
-        this.endLng = endLng;
-    }
-
-    public String getDuration() {
-        return duration;
+        this.endLng = Double.parseDouble(endLng);
     }
 
     public void setDuration(String duration) {
-        this.duration = duration;
-    }
-
-    public String getDistance() {
-        return distance;
+        this.duration = (Float.parseFloat(duration) / 3600);
     }
 
     public void setDistance(String distance) {
-        this.distance = distance;
-    }
-
-    public String getInstructions() {
-        return instructions;
+        this.distance = (Float.parseFloat(distance) / 1000);
     }
 
     public void setInstructions(String instructions) {
         this.instructions = instructions;
+    }
+
+    public double getStartLat() {
+        return startLat;
+    }
+
+    public double getStartLng() {
+        return startLng;
+    }
+
+    public double getEndLat() {
+        return endLat;
+    }
+
+    public double getEndLng() {
+        return endLng;
+    }
+
+    public float getDuration() {
+        return duration;
+    }
+
+    public float getDistance() {
+        return distance;
+    }
+
+    public String getInstructions() {
+        return instructions;
     }
 }

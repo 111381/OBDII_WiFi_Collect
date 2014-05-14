@@ -43,7 +43,6 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
     private List<String> wordList = null;
     private TextView textView = null;
     private EditText edittext= null;
-    public static String readyForDestination = "No request";
     private GpsLocation gpsLocation = null;
 
     public ObdResultReceiver mReceiver;
@@ -95,7 +94,7 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         }
         this.textView = (TextView) findViewById(R.id.text_view);
         this.textView.setText(inf.getSSID());
-        this.addDestinationListener();
+        this.addDestinationListener(this);
     }
 
     @Override
@@ -347,36 +346,12 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                 this.requestsEnabled = false;
                 this.textView.setText("OBDII requests disabled");
                 return true;
-            case R.id.action_save:
-                this.textView.setText("Saving to file");
-                this.saveToFile();
-                return true;
-            case R.id.action_google:
-                this.textView.setText("Google Service Request Status: " + readyForDestination);
-                if(!readyForDestination.equalsIgnoreCase("OK")) {
-                    return true;
-                }
-                List<RouteStep> routeSteps = this.route.getSteps();
-                Iterator<RouteStep> it = routeSteps.iterator();
-                while(it.hasNext()){
-                    //TODO: values can be null
-                    RouteStep s = it.next();
-                    this.wordList.add(s.getStartLat());
-                    this.wordList.add(s.getStartLng());
-                    this.wordList.add(s.getEndLat());
-                    this.wordList.add(s.getEndLng());
-                    this.wordList.add(s.getDuration());
-                    this.wordList.add(s.getInstructions());
-                    this.wordList.add(s.getDistance());
-                }
-                this.adapter.notifyDataSetChanged();
-                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
-    private void addDestinationListener() {
+    private void addDestinationListener(final MainActivity activity) {
         // get edittext component
         edittext = (EditText) findViewById(R.id.destination);
         // add a keylistener to monitor the keaybord avitvity...
@@ -384,16 +359,31 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 // if the users pressed a button and that button was "0"
                 if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                    readyForDestination = "Request at action";
                     String origin = "59.3913274,24.6640021";
                     Location loc = gpsLocation.getLocation();
                     if(loc != null) {
                         origin = Double.toString(loc.getLatitude()) + "," + Double.toString(loc.getLongitude());
                     }
-                    route = new MakeRoute(origin, edittext.getText().toString());
+                    route = new MakeRoute(activity, origin, edittext.getText().toString());
+                    textView.setText("Google Service Request: " + edittext.getText());
+                    clearList();
                     return true;
                 }
                 return false;
+            }
+        });
+    }
+
+    public void googleServiceRequestCompleted(final String status) {
+
+        runOnUiThread(new Runnable(){
+            @Override
+            public void run() {
+                textView.setText("Google Service Request Status: " + status);
+                if(status.equalsIgnoreCase("OK")) {
+                    wordList.addAll(route.calculateRouteSteps());
+                    adapter.notifyDataSetChanged();
+                }
             }
         });
     }

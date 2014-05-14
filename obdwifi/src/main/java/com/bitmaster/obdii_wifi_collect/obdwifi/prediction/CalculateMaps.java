@@ -5,6 +5,13 @@ package com.bitmaster.obdii_wifi_collect.obdwifi.prediction;
  */
 public class CalculateMaps {
 
+    public static double calculateExpenseAtSpeedAndTime(int row, double time) {
+
+        double power = calculatePowerAtSpeed(row);
+        return ((time * power) / MapCanValues.CAPACITY) * 100.0; //%
+    }
+
+
     public static double calculateRangeAtSpeed(int row) { //row==speed[km/h]
 
         int additionalRows = calculateDutyCycle(row);
@@ -23,7 +30,7 @@ public class CalculateMaps {
         return range;
     }
 
-    public static double calculatePowerAtSpeed(int row) {
+    private static double calculatePowerAtSpeed(int row) {
 
         int additionalRows = calculateDutyCycle(row);
         long sumOfRow = 0;
