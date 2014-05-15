@@ -1,9 +1,19 @@
 package com.bitmaster.obdii_wifi_collect.obdwifi.prediction;
 
+import android.location.Location;
 import android.util.Log;
+
+import com.bitmaster.obdii_wifi_collect.obdwifi.googleapis.RouteStep;
+import com.bitmaster.obdii_wifi_collect.obdwifi.loc.GpsLocation;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Created by renet on 5/2/14.
+ * Class with static constants and methods.
+ * Holds probe results.
  */
 public class MapCanValues {
 
@@ -24,6 +34,10 @@ public class MapCanValues {
     private static final int ACC_MAP_SIZE = 256;
 
     public static final double CAPACITY = 16000.0;
+
+    public static List<RouteStep> routeStepList = null;
+    private static RouteStep step = null;
+    private static List<Integer> stepSpeedList = new ArrayList<Integer>();
 
     private static long lastSpeed;
     private static long lastTime;
@@ -151,5 +165,33 @@ public class MapCanValues {
                 driveFrequency[speed][acc]++;
             }
         }
+    }
+
+    public static String realSpeedInSteps(Location loc) {
+
+        if(routeStepList == null || routeStepList.isEmpty() || loc == null) {
+            return null;
+        }
+        stepSpeedList.add(speed);
+        float[] distance = {0};
+        if(step == null) {
+            step = routeStepList.remove(0);
+        }
+        Location.distanceBetween(loc.getLatitude(), loc.getLongitude(), step.getEndLat(), step.getEndLng(), distance);
+        //reached to end location of step
+        if(distance[0] < loc.getAccuracy()) {
+            Iterator<Integer> it = stepSpeedList.iterator();
+            int sum = 0;
+            while(it.hasNext()) {
+                sum += it.next();
+            }
+            Integer speedOfStep = Math.round((float)sum / (float)stepSpeedList.size());//km/h
+            Integer plannedSpeed = Math.round(step.getDistance() / step.getDuration());//km/h
+            stepSpeedList.clear();
+            step = null;
+            //TODO: write speed difference to map
+            return plannedSpeed.toString() + ":" + speedOfStep.toString() + ":" + Float.toString(distance[0]);
+        }
+        return null;
     }
 }

@@ -44,7 +44,6 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
     private TextView textView = null;
     private EditText edittext= null;
     private GpsLocation gpsLocation = null;
-
     public ObdResultReceiver mReceiver;
     private SupportedPids pids = null;
     private MakeRoute route = null;
@@ -266,9 +265,14 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         String currentDateandTime = sdf.format(new Date());
         String csvLine = currentDateandTime + "," + line + ","
                 + latitude + "," + longitude + "," + altitude + ","
-                + Double.toString(MapCanValues.acceleration) + ";\n";
+                + Double.toString(MapCanValues.acceleration) + ",";
                 //+ Double.toString(CalculateMaps.calculatePowerAtSpeed(MapCanValues.speed)) + ","
                 //+ Double.toString(CalculateMaps.calculateRangeAtSpeed(MapCanValues.speed)) + ",";
+        String sectionSpeed = MapCanValues.realSpeedInSteps(loc);
+        if(sectionSpeed != null) {
+            csvLine = csvLine + sectionSpeed + ",";
+        }
+        csvLine = csvLine + ";\n";
 
         Intent mServiceIntent = new Intent(this, WriteDownService.class);
         mServiceIntent.putExtra("com.bitmaster.obdii_wifi_collect.obdwifi.io.csvLine", csvLine);
@@ -381,7 +385,8 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
             public void run() {
                 textView.setText("Google Service Request Status: " + status);
                 if(status.equalsIgnoreCase("OK")) {
-                    wordList.addAll(route.calculateRouteSteps());
+                    MapCanValues.routeStepList = route.getRouteSteps();
+                    wordList.addAll(route.calculateRouteStepsAsStringList());
                     adapter.notifyDataSetChanged();
                 }
             }

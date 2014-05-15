@@ -34,11 +34,15 @@ import javax.xml.parsers.ParserConfigurationException;
  */
 class RequestGoogleDirections extends AsyncTask<String, String, String> {
 
-    protected static  List<RouteStep> routeSteps = new ArrayList<RouteStep>();
+    private List<RouteStep> routeSteps = new ArrayList<RouteStep>();
     private MainActivity activity;
 
     public RequestGoogleDirections(MainActivity a) {
         this.activity = a;
+    }
+
+    protected List<RouteStep> getRouteSteps() {
+        return routeSteps;
     }
 
     @Override
@@ -104,7 +108,7 @@ class RequestGoogleDirections extends AsyncTask<String, String, String> {
         this.activity.googleServiceRequestCompleted(status.getTextContent());
     }
 
-    public Document getDomElement(String xml){
+    private Document getDomElement(String xml){
         Document doc = null;
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         try {
@@ -128,12 +132,12 @@ class RequestGoogleDirections extends AsyncTask<String, String, String> {
         // return DOM
         return doc;
     }
-    public String getValue(Element item, String str) {
+    private String getValue(Element item, String str) {
         NodeList n = item.getElementsByTagName(str);
         return this.getElementValue(n.item(0));
     }
 
-    public final String getElementValue( Node elem ) {
+    private final String getElementValue( Node elem ) {
         Node child;
         if( elem != null){
             if (elem.hasChildNodes()){
