@@ -268,9 +268,9 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                 + Double.toString(MapCanValues.acceleration) + ",";
                 //+ Double.toString(CalculateMaps.calculatePowerAtSpeed(MapCanValues.speed)) + ","
                 //+ Double.toString(CalculateMaps.calculateRangeAtSpeed(MapCanValues.speed)) + ",";
-        String sectionSpeed = MapCanValues.realSpeedInSteps(loc);
-        if(sectionSpeed != null) {
-            csvLine = csvLine + sectionSpeed + ",";
+        String sectionSpeedAndPower = MapCanValues.realSpeedAndPowerInSteps(loc);
+        if(sectionSpeedAndPower != null) {
+            csvLine = csvLine + sectionSpeedAndPower + ",";
         }
         csvLine = csvLine + ";\n";
 
@@ -302,7 +302,8 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        this.wifiLock.release();
+        if(wifiLock.isHeld())
+            this.wifiLock.release();
         this.gpsLocation = null;
     }
 

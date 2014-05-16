@@ -6,7 +6,9 @@ import android.util.Log;
 import com.bitmaster.obdii_wifi_collect.obdwifi.googleapis.RouteStep;
 import com.bitmaster.obdii_wifi_collect.obdwifi.loc.GpsLocation;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -38,6 +40,7 @@ public class MapCanValues {
     public static List<RouteStep> routeStepList = null;
     private static RouteStep step = null;
     private static List<Integer> stepSpeedList = new ArrayList<Integer>();
+    private static List<Integer> stepPowerList = new ArrayList<Integer>();
 
     private static long lastSpeed;
     private static long lastTime;
@@ -59,6 +62,7 @@ public class MapCanValues {
     public static int [][] driveConsumption = new int[SPEED_MAP_SIZE][ACC_MAP_SIZE]; //32768 * 4 bytes
     public static int [][] driveFrequency = new int[SPEED_MAP_SIZE][ACC_MAP_SIZE]; //32768 * 4 bytes
 
+    public static int [][] speedDiff = new int[SPEED_MAP_SIZE][24];//24h, speed zero at middle
     /*
      * returns false if no match in message or exception
      */
@@ -167,12 +171,13 @@ public class MapCanValues {
         }
     }
 
-    public static String realSpeedInSteps(Location loc) {
+    public static String realSpeedAndPowerInSteps(Location loc) {
 
         if(routeStepList == null || routeStepList.isEmpty() || loc == null) {
             return null;
         }
         stepSpeedList.add(speed);
+        stepPowerList.add((int)(amp * volt));
         float[] distance = {0};
         if(step == null) {
             step = routeStepList.remove(0);
@@ -180,6 +185,7 @@ public class MapCanValues {
         Location.distanceBetween(loc.getLatitude(), loc.getLongitude(), step.getEndLat(), step.getEndLng(), distance);
         //reached to end location of step
         if(distance[0] < loc.getAccuracy()) {
+            //average speed
             Iterator<Integer> it = stepSpeedList.iterator();
             int sum = 0;
             while(it.hasNext()) {
@@ -187,11 +193,36 @@ public class MapCanValues {
             }
             Integer speedOfStep = Math.round((float)sum / (float)stepSpeedList.size());//km/h
             Integer plannedSpeed = Math.round(step.getDistance() / step.getDuration());//km/h
+            setSpeedDiffMapValues(plannedSpeed, speedOfStep);
             stepSpeedList.clear();
             step = null;
-            //TODO: write speed difference to map
-            return plannedSpeed.toString() + ":" + speedOfStep.toString() + ":" + Float.toString(distance[0]);
+            //average power
+            Iterator<Integer> ip = stepPowerList.iterator();
+            int all = 0;
+            while(ip.hasNext()) {
+                all += ip.next();
+            }
+            Integer powerOfStep = Math.round((float)all / (float)stepPowerList.size());
+
+            //     planned speed                   average real speed             distance to step endpoint
+            return plannedSpeed.toString() + "," + speedOfStep.toString() + "," + Float.toString(distance[0])
+                    //                     planned power expense in percent
+                    + "," + Double.toString(CalculateMaps.calculateExpenseAtSpeedAndTime(plannedSpeed, (double)step.getDuration()))
+                    //      average real power
+                    + "," + powerOfStep.toString();
         }
         return null;
+    }
+
+    public static void setSpeedDiffMapValues(int plannedSpeed, int realSpeed) {
+
+        SimpleDateFormat sdf = new SimpleDateFormat("H");
+        String currentDateandTime = sdf.format(new Date());
+        if(speedDiff[plannedSpeed][Integer.parseInt(currentDateandTime)] == 0) {
+            speedDiff[plannedSpeed][Integer.parseInt(currentDateandTime)] = plannedSpeed - realSpeed;
+        } else {
+            speedDiff[plannedSpeed][Integer.parseInt(currentDateandTime)] = Math.round(
+                    ((float)(plannedSpeed - realSpeed) + (float)speedDiff[plannedSpeed][Integer.parseInt(currentDateandTime)]) / 2);
+        }
     }
 }

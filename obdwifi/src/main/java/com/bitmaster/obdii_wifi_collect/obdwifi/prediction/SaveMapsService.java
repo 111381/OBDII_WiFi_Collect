@@ -18,6 +18,7 @@ public class SaveMapsService extends IntentService {
 
     private static final String POWER_MAP_FILENAME = "EPowerMap.csv";
     private static final String FREQ_MAP_FILENAME = "FreqMap.csv";
+    private static final String DIFF_MAP_FILENAME = "DiffMap.csv";
 
     public SaveMapsService() {
         super("SaveMapsService");
@@ -32,9 +33,11 @@ public class SaveMapsService extends IntentService {
                 if (write) {
                     writePowerMapToFile();
                     writeFrequencyMapToFile();
+                    writeDiffMapToFile();
                 } else {
                     readPowerMapFromFile();
                     readFrequencyMapFromFile();
+                    readDiffMapFromFile();
                 }
             }
         }
@@ -109,6 +112,45 @@ public class SaveMapsService extends IntentService {
                 String[] items = line.split(",");
                 for (int j = 0; j < MapCanValues.driveFrequency[i].length; j++) { //acceleration as column
                         MapCanValues.driveFrequency[i][j] = Integer.parseInt(items[j]);
+                }
+                i++;
+            }
+            inputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void writeDiffMapToFile() {
+
+        File file = new File(Environment.getExternalStorageDirectory(), DIFF_MAP_FILENAME);
+        try {
+            FileOutputStream outputStream = new FileOutputStream(file, false);//append==false
+            for(int i = 0; i < MapCanValues.speedDiff.length; i++) {     //speed as row
+                for(int j = 0; j < MapCanValues.speedDiff[i].length; j++) { //acceleration as column
+                    String item = Integer.toString(MapCanValues.speedDiff[i][j]) + ",";
+                    outputStream.write(item.getBytes());
+                }
+                outputStream.write(";\n".getBytes()); //end of line
+            }
+            outputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void readDiffMapFromFile() {
+
+        File file = new File(Environment.getExternalStorageDirectory(), DIFF_MAP_FILENAME);
+        try {
+            FileInputStream inputStream = new FileInputStream(file);
+            BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
+            String line = "";
+            int i = 0;
+            while(((line = in.readLine()) != null) && (i < MapCanValues.speedDiff.length)) { //speed as row
+                String[] items = line.split(",");
+                for (int j = 0; j < MapCanValues.speedDiff[i].length; j++) { //acceleration as column
+                    MapCanValues.speedDiff[i][j] = Integer.parseInt(items[j]);
                 }
                 i++;
             }
