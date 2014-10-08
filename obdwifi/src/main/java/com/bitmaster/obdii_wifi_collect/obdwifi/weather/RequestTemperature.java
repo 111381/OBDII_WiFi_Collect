@@ -1,6 +1,10 @@
-package com.bitmaster.obdii_wifi_collect.obdwifi.googleapis;
+package com.bitmaster.obdii_wifi_collect.obdwifi.weather;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
+import android.util.Log;
 
 import com.bitmaster.obdii_wifi_collect.obdwifi.MainActivity;
 
@@ -21,27 +25,20 @@ import org.xml.sax.SAXException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 /**
- * Created by renet on 5/7/14.
+ * Created by rene on 6.10.14.
  */
-class RequestGoogleDirections extends AsyncTask<String, String, String> {
+public class RequestTemperature extends AsyncTask<String, String, String> {
 
-    private List<RouteStep> routeSteps = new ArrayList<RouteStep>();
-    private MainActivity activity;
+    private MainActivity activity = null;
 
-    public RequestGoogleDirections(MainActivity a) {
-        this.activity = a;
-    }
-
-    protected List<RouteStep> getRouteSteps() {
-        return routeSteps;
+    public RequestTemperature(MainActivity activity) {
+        this.activity = activity;
     }
 
     @Override
@@ -63,11 +60,9 @@ class RequestGoogleDirections extends AsyncTask<String, String, String> {
                 response.getEntity().getContent().close();
                 throw new IOException(statusLine.getReasonPhrase());
             }
-        } catch (ClientProtocolException e) {
-            this.activity.googleServiceRequestCompleted(e.getLocalizedMessage());
-        } catch (IOException e) {
-            this.activity.googleServiceRequestCompleted(e.getLocalizedMessage());
         }
+        catch (ClientProtocolException e) {}
+        catch (IOException e) {}
         return responseString;
     }
 
@@ -76,35 +71,10 @@ class RequestGoogleDirections extends AsyncTask<String, String, String> {
         super.onPostExecute(result);
 
         Document doc = getDomElement(result);
-        Node status = doc.getElementsByTagName("status").item(0);
-        if(!status.getTextContent().equalsIgnoreCase("OK")) {
-            //status: FAIL
-            this.activity.googleServiceRequestCompleted(status.getTextContent());
-            return;
-        }
-        NodeList nl = doc.getElementsByTagName("step");
-        // looping through all item nodes <item>
-        for (int i = 0; i < nl.getLength(); i++) {
-            Element e = (Element) nl.item(i);
-            Element child;
-            RouteStep routeStep = new RouteStep();
+        //Node station = doc.getElementsByTagName("name").item(0);
+        Node airtemperature = doc.getElementsByTagName("airtemperature").item(0);
 
-            child = (Element) e.getElementsByTagName("start_location").item(0);
-            routeStep.setStartLat(getValue(child, "lat"));
-            routeStep.setStartLng(getValue(child, "lng"));
-            child = (Element) e.getElementsByTagName("end_location").item(0);
-            routeStep.setEndLat(getValue(child, "lat"));
-            routeStep.setEndLng(getValue(child, "lng"));
-            child = (Element) e.getElementsByTagName("duration").item(0);
-            routeStep.setDuration(getValue(child, "value"));
-            routeStep.setInstructions(getValue(e, "html_instructions"));
-            child = (Element) e.getElementsByTagName("distance").item(0);
-            routeStep.setDistance(getValue(child, "value"));
-
-            routeSteps.add(routeStep);
-        }
-        //status: OK
-        this.activity.googleServiceRequestCompleted(status.getTextContent());
+        this.activity.temperatureRequestCompleted(airtemperature.getTextContent());
     }
 
     private Document getDomElement(String xml){
@@ -119,13 +89,10 @@ class RequestGoogleDirections extends AsyncTask<String, String, String> {
             doc = db.parse(is);
 
         } catch (ParserConfigurationException e) {
-            this.activity.googleServiceRequestCompleted(e.getLocalizedMessage());
             return null;
         } catch (SAXException e) {
-            this.activity.googleServiceRequestCompleted(e.getLocalizedMessage());
             return null;
         } catch (IOException e) {
-            this.activity.googleServiceRequestCompleted(e.getLocalizedMessage());
             return null;
         }
         // return DOM

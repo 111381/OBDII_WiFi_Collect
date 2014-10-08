@@ -11,7 +11,8 @@ tools:ignore="MergeRootFrame" />
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical" >
+    android:orientation="vertical"
+    android:weightSum="1">
 
     <TextView
         android:id="@+id/text_view"
@@ -26,8 +27,22 @@ tools:ignore="MergeRootFrame" />
 
     <ListView
         android:id="@id/android:list"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" >
+        android:layout_width="fill_parent"
+        android:layout_height="708dp">
     </ListView>
+
+    <Button
+        android:layout_width="fill_parent"
+        android:layout_height="72dp"
+        android:text="@string/action_startCAN"
+        android:id="@+id/button_start_can"
+        android:visibility="invisible" />
+
+    <Button
+        android:layout_width="fill_parent"
+        android:layout_height="72dp"
+        android:text="@string/action_stopCAN"
+        android:id="@+id/button_stop_can"
+        android:visibility="gone" />
 
 </LinearLayout>

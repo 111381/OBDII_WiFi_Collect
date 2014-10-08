@@ -4,6 +4,7 @@ import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
+import android.net.ConnectivityManager;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
@@ -14,6 +15,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,12 +31,15 @@ import com.bitmaster.obdii_wifi_collect.obdwifi.prediction.CalculateMaps;
 import com.bitmaster.obdii_wifi_collect.obdwifi.prediction.MapCanValues;
 import com.bitmaster.obdii_wifi_collect.obdwifi.obd2.SupportedPids;
 import com.bitmaster.obdii_wifi_collect.obdwifi.prediction.SaveMapsService;
+import com.bitmaster.obdii_wifi_collect.obdwifi.weather.RequestTemperature;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 public class MainActivity extends ListActivity implements ObdResultReceiver.Receiver {
@@ -43,6 +48,8 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
     private List<String> wordList = null;
     private TextView textView = null;
     private EditText edittext= null;
+    private Button startButton = null;
+    private Button stopButton = null;
     private GpsLocation gpsLocation = null;
     public ObdResultReceiver mReceiver;
     private SupportedPids pids = null;
@@ -52,20 +59,17 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
     private boolean stopCanMonitoring = false;
     private boolean setCanFilter = false;
 
-    private WifiManager wifi = null;
     private WifiManager.WifiLock wifiLock = null;
 
     public static int TCP_SERVER_PORT = 35000;
     public static String SERVER_IP_ADDRESS = "192.168.0.10";
     //public static String SERVER_IP_ADDRESS = "192.168.1.5";
-    public static int SOCKET_CONN_TIMEOUT = 30*1000;
+    public static int SOCKET_CONN_TIMEOUT = 10*1000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        this.mapsToFile(false);//read
 
         this.wordList = new ArrayList<String>();
         this.adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, wordList);
@@ -77,6 +81,11 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         this.mReceiver = new ObdResultReceiver(new Handler());
         this.mReceiver.setReceiver(this);
 
+        this.textView = (TextView) findViewById(R.id.text_view);
+        this.addGoogleServiceListener(this);
+        this.setupButtons();
+
+
         //SSID-WiFi_OBDII
         //BSSID-00:0E:C6:9F:0D:24
         //id-4
@@ -85,15 +94,25 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         //SSID V-LINK
         //BSSID-AC:CF:23:21:E2:59
         //IP-192.168.1.150 - channel:1
-        this.wifi = (WifiManager)this.getSystemService(Context.WIFI_SERVICE);
-        this.wifiLock = wifi.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "HighPerf wifi lock");
-        WifiInfo inf = wifi.getConnectionInfo();
+
+        /*WifiManager wifiManager = (WifiManager) this.getSystemService(Context.WIFI_SERVICE);
+        wifiManager.setWifiEnabled(false);
+        ConnectivityManager connManager = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
+        connManager.setNetworkPreference(ConnectivityManager.TYPE_MOBILE);
+        this.textView.setText(connManager.getActiveNetworkInfo().getTypeName());*/
+
+        //Request temperature an set static consumption to map
+        new RequestTemperature(this).execute(
+                "http://www.ilmateenistus.ee/ilma_andmed/xml/observations.php"
+        );
+
+        WifiManager wifiManager = (WifiManager)this.getSystemService(Context.WIFI_SERVICE);
+        this.wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "HighPerf wifi lock");
+        WifiInfo inf = wifiManager.getConnectionInfo();
         if(inf.getSSID().equalsIgnoreCase("V-LINK")){
             SERVER_IP_ADDRESS = "192.168.0.150";
         }
-        this.textView = (TextView) findViewById(R.id.text_view);
         this.textView.setText(inf.getSSID());
-        this.addDestinationListener(this);
     }
 
     @Override
@@ -268,10 +287,10 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                 + Double.toString(MapCanValues.acceleration) + ",";
                 //+ Double.toString(CalculateMaps.calculatePowerAtSpeed(MapCanValues.speed)) + ","
                 //+ Double.toString(CalculateMaps.calculateRangeAtSpeed(MapCanValues.speed)) + ",";
-        String sectionSpeedAndPower = MapCanValues.realSpeedAndPowerInSteps(loc);
+        /*String sectionSpeedAndPower = MapCanValues.realSpeedAndPowerInSteps(loc);
         if(sectionSpeedAndPower != null) {
             csvLine = csvLine + sectionSpeedAndPower + ",";
-        }
+        }*/
         csvLine = csvLine + ";\n";
 
         Intent mServiceIntent = new Intent(this, WriteDownService.class);
@@ -307,13 +326,103 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
         this.gpsLocation = null;
     }
 
+    private void addGoogleServiceListener(final MainActivity activity) {
+        // get edittext component
+        edittext = (EditText) findViewById(R.id.destination);
+        // add a keylistener to monitor the keaybord avitvity...
+        edittext.setOnKeyListener(new View.OnKeyListener() {
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                // if the users pressed a button and that button was "Enter"
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                    //Request destination routes
+                    String origin = "59.3913274,24.6640021";
+                    Location loc = gpsLocation.getLocation();
+                    if(loc != null) {
+                        origin = Double.toString(loc.getLatitude()) + "," + Double.toString(loc.getLongitude());
+                    }
+                    route = new MakeRoute(activity, origin, edittext.getText().toString());
+                    textView.setText("Google Service Request: " + edittext.getText());
+                    clearList();
+                    return true;
+                }
+                return false;
+            }
+        });
+    }
 
-   @Override
+    private void setupButtons() {
+
+        this.startButton = (Button) findViewById(R.id.button_start_can);
+        startButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                wifiLock.acquire();
+                mapsToFile(false);//read
+                canRequests = true;
+                stopCanMonitoring = false;
+                setCanFilter = false;
+                pids = new SupportedPids();
+                gpsLocation.requestLocation();
+                nextCanRequest();
+                textView.setText("CAN monitoring in progress");
+                edittext.setVisibility(View.GONE);
+                startButton.setVisibility(View.GONE);
+                stopButton.setVisibility(View.VISIBLE);
+            }
+        });
+        this.stopButton = (Button) findViewById(R.id.button_stop_can);
+        stopButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                wifiLock.release();
+                stopCanMonitoring = true;
+                textView.setText("Saving Map ...");
+                mapsToFile(true);//write
+                textView.setText("CAN monitoring stopped");
+                //hide buttons and write maps to file
+                startButton.setVisibility(View.GONE);
+                stopButton.setVisibility(View.GONE);
+                edittext.setVisibility(View.GONE);
+            }
+        });
+    }
+
+    public void googleServiceRequestCompleted(final String status) {
+
+        runOnUiThread(new Runnable(){
+            @Override
+            public void run() {
+                textView.setText("Google Service Request Status: " + status +
+                        ". Temperature: " + Integer.toString(MapCanValues.temperature));
+                if(status.equalsIgnoreCase("OK")) {
+                    MapCanValues.routeStepList = route.getRouteSteps();
+                    wordList.addAll(route.calculateRouteStepsAsStringList());
+                    adapter.notifyDataSetChanged();
+                }
+            }
+        });
+    }
+
+    public void temperatureRequestCompleted(final String temperature) {
+
+        runOnUiThread(new Runnable(){
+            @Override
+            public void run() {
+                textView.setText("Temperature: " + temperature);
+                float temp = Float.parseFloat(temperature);
+
+                MapCanValues.temperature = Math.round(temp);
+
+                startButton.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+/*    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
+         // Inflate the menu; this adds items to the action bar if it is present.
+         getMenuInflater().inflate(R.menu.main, menu);
+         return true;
     }
 
     @Override
@@ -355,42 +464,5 @@ public class MainActivity extends ListActivity implements ObdResultReceiver.Rece
                 return super.onOptionsItemSelected(item);
         }
     }
-
-    private void addDestinationListener(final MainActivity activity) {
-        // get edittext component
-        edittext = (EditText) findViewById(R.id.destination);
-        // add a keylistener to monitor the keaybord avitvity...
-        edittext.setOnKeyListener(new View.OnKeyListener() {
-            public boolean onKey(View v, int keyCode, KeyEvent event) {
-                // if the users pressed a button and that button was "0"
-                if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                    String origin = "59.3913274,24.6640021";
-                    Location loc = gpsLocation.getLocation();
-                    if(loc != null) {
-                        origin = Double.toString(loc.getLatitude()) + "," + Double.toString(loc.getLongitude());
-                    }
-                    route = new MakeRoute(activity, origin, edittext.getText().toString());
-                    textView.setText("Google Service Request: " + edittext.getText());
-                    clearList();
-                    return true;
-                }
-                return false;
-            }
-        });
-    }
-
-    public void googleServiceRequestCompleted(final String status) {
-
-        runOnUiThread(new Runnable(){
-            @Override
-            public void run() {
-                textView.setText("Google Service Request Status: " + status);
-                if(status.equalsIgnoreCase("OK")) {
-                    MapCanValues.routeStepList = route.getRouteSteps();
-                    wordList.addAll(route.calculateRouteStepsAsStringList());
-                    adapter.notifyDataSetChanged();
-                }
-            }
-        });
-    }
+*/
 }

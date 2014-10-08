@@ -19,6 +19,7 @@ public class SaveMapsService extends IntentService {
     private static final String POWER_MAP_FILENAME = "EPowerMap.csv";
     private static final String FREQ_MAP_FILENAME = "FreqMap.csv";
     private static final String DIFF_MAP_FILENAME = "DiffMap.csv";
+    private static final String TEMP_MAP_FILENAME = "TempMap.csv";
 
     public SaveMapsService() {
         super("SaveMapsService");
@@ -31,13 +32,15 @@ public class SaveMapsService extends IntentService {
             if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
                 boolean write = intent.getBooleanExtra("com.bitmaster.obdii_wifi_collect.obdwifi.prediction.Write", false);
                 if (write) {
+                    writeTempMapToFile();
                     writePowerMapToFile();
                     writeFrequencyMapToFile();
-                    writeDiffMapToFile();
+                    //writeDiffMapToFile();
                 } else {
                     readPowerMapFromFile();
                     readFrequencyMapFromFile();
-                    readDiffMapFromFile();
+                    readTempMapFromFile();
+                    //readDiffMapFromFile();
                 }
             }
         }
@@ -121,7 +124,48 @@ public class SaveMapsService extends IntentService {
         }
     }
 
-    private static void writeDiffMapToFile() {
+    private static void writeTempMapToFile() {
+
+        MapCanValues.subtractStaticConsumption();
+
+        File file = new File(Environment.getExternalStorageDirectory(), TEMP_MAP_FILENAME);
+        try {
+            FileOutputStream outputStream = new FileOutputStream(file, false);//append==false
+            for(int i = 0; i < MapCanValues.staticConsumption.length; i++) {     //temperature as row
+                String item = Integer.toString(MapCanValues.staticConsumption[i][0]) + ","; //power
+                item = item + Integer.toString(MapCanValues.staticConsumption[i][1]) + ","; //freq
+                item = item + ";\n";
+                outputStream.write(item.getBytes());
+            }
+            outputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void readTempMapFromFile() {
+
+        File file = new File(Environment.getExternalStorageDirectory(), TEMP_MAP_FILENAME);
+        try {
+            FileInputStream inputStream = new FileInputStream(file);
+            BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
+            String line = "";
+            int i = 0;
+            while(((line = in.readLine()) != null) && (i < MapCanValues.staticConsumption.length)) { //temperature as row
+                String[] items = line.split(",");
+                MapCanValues.staticConsumption[i][0] = Integer.parseInt(items[0]); //power
+                MapCanValues.staticConsumption[i][1] = Integer.parseInt(items[1]); //freq
+                i++;
+            }
+            inputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        MapCanValues.addStaticConsumption();
+    }
+
+    /*private static void writeDiffMapToFile() {
 
         File file = new File(Environment.getExternalStorageDirectory(), DIFF_MAP_FILENAME);
         try {
@@ -158,5 +202,5 @@ public class SaveMapsService extends IntentService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
+    }*/
 }

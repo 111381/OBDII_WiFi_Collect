@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.bitmaster.obdii_wifi_collect.obdwifi.googleapis.RouteStep;
 import com.bitmaster.obdii_wifi_collect.obdwifi.loc.GpsLocation;
+import com.bitmaster.obdii_wifi_collect.obdwifi.weather.RequestTemperature;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -34,6 +35,9 @@ public class MapCanValues {
 
     private static final int SPEED_MAP_SIZE = 128;
     private static final int ACC_MAP_SIZE = 256;
+    private static final int ACC_OFFSET = 128;
+    private static final int TEMP_AREA = 80;
+    private static final int TEMP_OFFSET = 39;
 
     public static final double CAPACITY = 16000.0;
 
@@ -58,11 +62,14 @@ public class MapCanValues {
 
     public static String currentPID;
     public static String row = "";
+    public static int temperature = 0;
 
     public static int [][] driveConsumption = new int[SPEED_MAP_SIZE][ACC_MAP_SIZE]; //32768 * 4 bytes
     public static int [][] driveFrequency = new int[SPEED_MAP_SIZE][ACC_MAP_SIZE]; //32768 * 4 bytes
 
-    public static int [][] speedDiff = new int[SPEED_MAP_SIZE][24];//24h, speed zero at middle
+    //public static int [][] speedDiff = new int[SPEED_MAP_SIZE][24];//24h, speed zero at middle
+
+    public static int [][] staticConsumption = new int[TEMP_AREA][2];
     /*
      * returns false if no match in message or exception
      */
@@ -157,7 +164,7 @@ public class MapCanValues {
 
         if(currentPID.equals(SHIFT) && shift.equals(DRIVE)) { //only for shift DRIVE position
             int power = (int)(amp * volt); //amp * volt
-            int acc = ((int)(acceleration * 25.0)) + 128;//0,04 m/s2 unit
+            int acc = ((int)(acceleration * 25.0)) + ACC_OFFSET;//0,04 m/s2 unit
             // check if fits to array
             if((0 <= speed) && (speed < SPEED_MAP_SIZE) && (0 <= acc) && (acc < ACC_MAP_SIZE)) {
                 int existValue = driveConsumption[speed][acc];
@@ -171,7 +178,50 @@ public class MapCanValues {
         }
     }
 
-    public static String realSpeedAndPowerInSteps(Location loc) {
+    /**
+     * When saving maps to file
+     */
+    public static void subtractStaticConsumption() {
+
+        //update Static Consumption map values: zero speed, zero acceleration
+        staticConsumption[TEMP_OFFSET + temperature][0] = driveConsumption[0][ACC_OFFSET];
+        staticConsumption[TEMP_OFFSET + temperature][1] = driveFrequency[0][ACC_OFFSET];
+
+        //subtract current static value from all consumptions
+        driveFrequency[0][ACC_OFFSET] -= staticConsumption[TEMP_OFFSET + temperature][1];
+        for(int i = 0; i < driveFrequency.length; i++) {     //speed as row
+            for(int j = 0; j < driveFrequency[i].length; j++) { //acceleration as column
+                if(driveFrequency[i][j] > 0) {
+                    //subtract static power at temperature - zero is 40.th row
+                    driveConsumption[i][j] -= staticConsumption[TEMP_OFFSET + temperature][0];
+                }
+            }
+        }
+    }
+
+    /**
+     * When reading maps from file
+     */
+    public static void addStaticConsumption() {
+
+        //update Freq and Consumption map values: zero speed, zero acceleration
+        driveConsumption[0][ACC_OFFSET] = staticConsumption[TEMP_OFFSET + temperature][0];
+        driveFrequency[0][ACC_OFFSET] = staticConsumption[TEMP_OFFSET + temperature][1];
+
+        //add current static value to all consumptions
+        driveFrequency[0][ACC_OFFSET] += staticConsumption[TEMP_OFFSET + temperature][1];
+        for(int i = 0; i < MapCanValues.driveFrequency.length; i++) {     //speed as row
+            for(int j = 0; j < MapCanValues.driveFrequency[i].length; j++) { //acceleration as column
+
+                if(MapCanValues.driveFrequency[i][j] > 0) {
+                    //subtract static power at temperature - zero is 40
+                    MapCanValues.driveConsumption[i][j] += MapCanValues.staticConsumption[MapCanValues.TEMP_OFFSET + MapCanValues.temperature][0];
+                }
+            }
+        }
+    }
+
+    /*public static String realSpeedAndPowerInSteps(Location loc) {
 
         if(routeStepList == null || routeStepList.isEmpty() || loc == null) {
             return null;
@@ -224,5 +274,5 @@ public class MapCanValues {
             speedDiff[plannedSpeed][Integer.parseInt(currentDateandTime)] = Math.round(
                     ((float)(plannedSpeed - realSpeed) + (float)speedDiff[plannedSpeed][Integer.parseInt(currentDateandTime)]) / 2);
         }
-    }
+    }*/
 }
