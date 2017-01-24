@@ -4,8 +4,8 @@
       <root url="jar://$PROJECT_DIR$/obdwifi/build/intermediates/exploded-aar/com.android.support/appcompat-v7/20.0.0/annotations.zip!/" />
     </ANNOTATIONS>
     <CLASSES>
-      <root url="file://$PROJECT_DIR$/obdwifi/build/intermediates/exploded-aar/com.android.support/appcompat-v7/20.0.0/res" />
-      <root url="jar://$PROJECT_DIR$/obdwifi/build/intermediates/exploded-aar/com.android.support/appcompat-v7/20.0.0/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.android/build-cache/deac6bf5c6f7ca88e39cb266d2e90b00c1caa969/output/res" />
+      <root url="jar://$USER_HOME$/.android/build-cache/deac6bf5c6f7ca88e39cb266d2e90b00c1caa969/output/jars/classes.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
